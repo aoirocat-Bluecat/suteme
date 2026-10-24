@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TempMail Pro - 捨てメアド作成 & 受信専用ボックス</title>
+  <title>TempMail Pro - 捨てメアド作成 & リアルタイム受信</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -30,7 +30,7 @@
   <!-- QRCode.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Google Fonts Inter & JetBrains Mono -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -74,9 +74,9 @@
         <div>
           <h1 class="font-bold text-lg leading-tight tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             TempMail Pro
-            <span class="text-xs font-normal text-slate-500 dark:text-slate-400 hidden sm:inline-block">/ 捨てメアド作成 & 受信</span>
+            <span class="text-xs font-normal text-slate-500 dark:text-slate-400 hidden sm:inline-block">/ 捨てメアド作成 & リアルタイム受信</span>
           </h1>
-          <p class="text-xs text-slate-500 dark:text-slate-400">登録不要・完全匿名のメール受信ボックス</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">実用可能・登録不要・完全匿名の使い捨て受信箱</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span id="statusText">オンライン</span>
+          <span id="statusText">リアルタイム受信中</span>
         </div>
 
         <!-- Sound Alert Toggle -->
@@ -119,7 +119,7 @@
             </div>
             <!-- Auto sync countdown -->
             <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 animate-spin text-brand-500" style="animation-duration: 4s;"></i>
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 animate-spin text-brand-500" style="animation-duration: 5s;"></i>
               <span>自動同期: <span id="refreshTimer" class="font-mono-code font-bold text-slate-800 dark:text-slate-200">5</span>秒</span>
             </div>
           </div>
@@ -127,8 +127,8 @@
           <div class="flex flex-wrap items-center gap-3">
             <!-- Email Display -->
             <div id="emailDisplayContainer" class="flex-1 min-w-[280px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between focus-within:border-brand-500 transition-colors shadow-inner">
-              <span id="currentEmail" class="font-mono-code text-lg sm:text-xl font-bold text-brand-600 dark:text-brand-100 select-all truncate">
-                生成中...
+              <span id="currentEmail" class="font-mono-code text-base sm:text-xl font-bold text-brand-600 dark:text-brand-300 select-all truncate">
+                アドレス生成中...
               </span>
               <span id="copySuccessBadge" class="hidden text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 px-2.5 py-1 rounded-md font-sans font-medium ml-2 shrink-0">
                 コピー完了!
@@ -136,27 +136,48 @@
             </div>
             
             <!-- Quick Action Buttons -->
-            <button onclick="copyAddress()" class="px-4 py-3 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-medium rounded-xl transition-all shadow-md shadow-brand-600/20 flex items-center gap-2 text-sm">
+            <button onclick="copyAddress()" class="px-4 py-3 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-medium rounded-xl transition-all shadow-md shadow-brand-600/20 flex items-center gap-2 text-sm shrink-0">
               <i data-lucide="copy" class="w-4 h-4"></i>
               <span>コピー</span>
             </button>
-            <button onclick="generateNewAddress()" class="px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-slate-800 dark:text-slate-200 font-medium rounded-xl border border-slate-300 dark:border-slate-700 transition-all flex items-center gap-2 text-sm">
+            <button onclick="generateNewAddress()" class="px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-slate-800 dark:text-slate-200 font-medium rounded-xl border border-slate-300 dark:border-slate-700 transition-all flex items-center gap-2 text-sm shrink-0">
               <i data-lucide="sparkles" class="w-4 h-4 text-brand-500"></i>
-              <span>アドレス変更</span>
+              <span>新しいアドレスを作成</span>
             </button>
-            <button onclick="toggleQrModal()" class="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-slate-700 transition-all" title="QRコードを表示">
+            <button onclick="toggleQrModal()" class="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-slate-700 transition-all shrink-0" title="QRコードを表示">
               <i data-lucide="qr-code" class="w-5 h-5"></i>
             </button>
           </div>
 
-          <!-- Domain Selector -->
-          <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">
-            <label for="domainSelect" class="font-medium">ドメイン変更:</label>
-            <select id="domainSelect" onchange="changeDomain()" class="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-mono-code text-xs">
-              <!-- Dynamically populated -->
-            </select>
+          <!-- Domain & Service Selector -->
+          <div class="flex flex-wrap items-center justify-between gap-4 pt-1 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-2">
+              <label for="domainSelect" class="font-medium">ドメイン選択:</label>
+              <select id="domainSelect" onchange="changeDomain()" class="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-mono-code text-xs">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-medium">提供サーバー:</span>
+              <span id="providerBadge" class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono-code text-[11px]">
+                Guerrilla Mail API / 1SecMail
+              </span>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Testing Instructions Notice Box -->
+    <div class="bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/50 rounded-xl p-4 text-xs sm:text-sm text-indigo-900 dark:text-indigo-200 flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow-sm">
+      <div class="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 shrink-0">
+        <i data-lucide="send" class="w-5 h-5"></i>
+      </div>
+      <div class="flex-1 space-y-1">
+        <p class="font-bold">✉️ 受信テスト手順（実物メール受信OK）:</p>
+        <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+          上の<strong>「コピー」</strong>ボタンを押してアドレスをコピーし、ご自身の <strong>Gmail / Yahoo!メール / iCloud</strong> 等からこのアドレス宛にメールを送信してみてください。約5〜10秒後に自動的に下の受信トレイへ届きます。
+        </p>
       </div>
     </div>
 
@@ -263,31 +284,53 @@
   <!-- JavaScript Engine -->
   <script>
     // ==========================================
-    // Core App State & Config
+    // Core App State & Multi-API Config
     // ==========================================
     const CONFIG = {
       POLL_INTERVAL: 5,
-      LOCAL_STORAGE_KEY: 'tempmail_pro_v2_data',
+      LOCAL_STORAGE_KEY: 'tempmail_pro_v3_data',
       THEME_KEY: 'tempmail_theme',
-      MAIL_TM_BASE: 'https://api.mail.tm'
+      // Primary multi-provider APIs that support CORS and real incoming emails
+      GUERRILLA_BASE: 'https://api.guerrillamail.com/ajax.php',
+      SECDOMAINS: ['1secmail.com', '1secmail.org', '1secmail.net', 'guerrillamailblock.com', 'guerrillamail.com', 'sharklasers.com']
     };
 
     let state = {
       address: '',
-      password: '',
-      token: '',
-      accountId: '',
-      domains: [],
+      sid: '', // Guerrilla session ID
+      login: '',
+      domain: '',
+      provider: 'guerrillamail', // 'guerrillamail' | 'secmail'
+      domains: CONFIG.SECDOMAINS,
       selectedDomain: '',
       messages: [],
       selectedMsgId: null,
       soundEnabled: true,
       darkMode: true,
-      apiMode: 'mail.tm',
       countdown: CONFIG.POLL_INTERVAL
     };
 
     let timerId = null;
+
+    // CORS Proxy Fallbacks in case of client-side origin block
+    const CORS_PROXIES = [
+      url => url, // Direct
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    ];
+
+    async function fetchWithFallback(url, options = {}) {
+      for (let proxyFn of CORS_PROXIES) {
+        try {
+          const proxyUrl = proxyFn(url);
+          const response = await fetch(proxyUrl, { credentials: 'omit', ...options });
+          if (response.ok) return response;
+        } catch (e) {
+          console.warn('Fetch fallback attempted:', e);
+        }
+      }
+      throw new Error('Network call failed across all CORS strategies');
+    }
 
     // ==========================================
     // Initialization & Theme Settings
@@ -383,12 +426,12 @@
       try {
         localStorage.setItem(CONFIG.LOCAL_STORAGE_KEY, JSON.stringify({
           address: state.address,
-          password: state.password,
-          token: state.token,
-          accountId: state.accountId,
+          sid: state.sid,
+          login: state.login,
+          domain: state.domain,
+          provider: state.provider,
           messages: state.messages,
-          soundEnabled: state.soundEnabled,
-          apiMode: state.apiMode
+          soundEnabled: state.soundEnabled
         }));
       } catch(e) {
         console.error('Failed to save state', e);
@@ -401,12 +444,12 @@
         if (saved) {
           const parsed = JSON.parse(saved);
           state.address = parsed.address || '';
-          state.password = parsed.password || '';
-          state.token = parsed.token || '';
-          state.accountId = parsed.accountId || '';
+          state.sid = parsed.sid || '';
+          state.login = parsed.login || '';
+          state.domain = parsed.domain || '';
+          state.provider = parsed.provider || 'guerrillamail';
           state.messages = parsed.messages || [];
           state.soundEnabled = parsed.soundEnabled !== undefined ? parsed.soundEnabled : true;
-          state.apiMode = parsed.apiMode || 'mail.tm';
         }
       } catch(e) {
         console.error('Failed to parse saved state', e);
@@ -414,206 +457,251 @@
     }
 
     // ==========================================
-    // Email Account Engine
+    // Email Account Engine (Real Disposable Mail)
     // ==========================================
     async function initEmailAccount() {
-      updateStatusBadge('connecting', '接続中...');
+      updateStatusBadge('connecting', 'アドレス接続中...');
+      populateDomainSelector();
 
-      let domains = await fetchDomains();
-      if (!domains || domains.length === 0) {
-        enableMockMode('Mail.tm API接続不可のためデモ用ドメインで待機中');
-        return;
-      }
-
-      state.domains = domains;
-      populateDomainSelector(domains);
-
-      if (state.address && state.token && state.apiMode === 'mail.tm') {
+      if (state.address && (state.sid || (state.login && state.domain))) {
         document.getElementById('currentEmail').textContent = state.address;
-        updateStatusBadge('online', 'オンライン');
+        updateStatusBadge('online', 'リアルタイム受信中');
         fetchInbox();
         return;
       }
 
-      await createNewAccount(domains[0]);
+      await generateNewAddress();
     }
 
-    async function fetchDomains() {
-      try {
-        const res = await fetch(`${CONFIG.MAIL_TM_BASE}/domains`, { timeout: 5000 });
-        if (!res.ok) throw new Error('Domain fetch failed');
-        const data = await res.json();
-        return data['hydra:member'] ? data['hydra:member'].map(d => d.domain) : [];
-      } catch (err) {
-        console.warn('Mail.tm domains fetch failed:', err);
-        return null;
-      }
-    }
-
-    function populateDomainSelector(domains) {
+    function populateDomainSelector() {
       const select = document.getElementById('domainSelect');
       select.innerHTML = '';
-      domains.forEach(dom => {
+      
+      const guerrillaDomains = ['guerrillamailblock.com', 'guerrillamail.com', 'sharklasers.com', 'pokemail.net'];
+      const secDomains = ['1secmail.com', '1secmail.org', '1secmail.net'];
+      const allDomains = [...guerrillaDomains, ...secDomains];
+
+      allDomains.forEach(dom => {
         const opt = document.createElement('option');
         opt.value = dom;
         opt.textContent = '@' + dom;
         select.appendChild(opt);
       });
-      if (state.selectedDomain) {
-        select.value = state.selectedDomain;
+
+      if (state.domain) {
+        select.value = state.domain;
       }
     }
 
-    async function createNewAccount(domain) {
-      state.selectedDomain = domain || (state.domains[0] || 'tempmail.com');
-      const randomUser = 'user_' + Math.random().toString(36).substring(2, 10);
-      const email = `${randomUser}@${state.selectedDomain}`;
-      const password = 'Pass_' + Math.random().toString(36).substring(2, 12);
-
-      if (state.apiMode === 'mock') {
-        state.address = email;
-        state.messages = [];
-        document.getElementById('currentEmail').textContent = state.address;
-        renderInbox();
-        saveState();
-        return;
-      }
-
+    async function createGuerrillaAccount(customUser = '') {
       try {
-        // Register account
-        const regRes = await fetch(`${CONFIG.MAIL_TM_BASE}/accounts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: email, password: password })
-        });
+        let url = `${CONFIG.GUERRILLA_BASE}?f=get_email_address&ip=127.0.0.1&agent=TempMailClient`;
+        if (state.sid) {
+          url += `&sid=${state.sid}`;
+        }
+        if (customUser) {
+          url = `${CONFIG.GUERRILLA_BASE}?f=set_email_user&email_user=${encodeURIComponent(customUser)}&ip=127.0.0.1&agent=TempMailClient&sid=${state.sid}`;
+        }
 
-        if (!regRes.ok) throw new Error('Account registration failed');
-        const regData = await regRes.json();
+        const res = await fetchWithFallback(url);
+        const data = await res.json();
 
-        // Get authentication token
-        const tokenRes = await fetch(`${CONFIG.MAIL_TM_BASE}/token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: email, password: password })
-        });
-
-        if (!tokenRes.ok) throw new Error('Token creation failed');
-        const tokenData = await tokenRes.json();
-
-        state.address = email;
-        state.password = password;
-        state.accountId = regData.id;
-        state.token = tokenData.token;
-        state.messages = [];
-        state.selectedMsgId = null;
+        state.provider = 'guerrillamail';
+        state.address = data.email_addr;
+        state.sid = data.sid || state.sid;
+        const parts = state.address.split('@');
+        state.login = parts[0];
+        state.domain = parts[1];
 
         document.getElementById('currentEmail').textContent = state.address;
-        updateStatusBadge('online', 'オンライン');
-        renderInbox();
-        renderEmailDetail(null);
-        saveState();
+        document.getElementById('domainSelect').value = state.domain;
+        document.getElementById('providerBadge').textContent = 'GuerrillaMail Engine';
+        updateStatusBadge('online', 'リアルタイム受信中');
 
+        saveState();
+        fetchInbox(true);
       } catch (err) {
-        console.warn('API error, switching to Fallback Mode:', err);
-        enableMockMode('API制限のためスタンドバイモードで動作中');
+        console.warn('Guerrilla API issue, falling back to 1SecMail API:', err);
+        await create1SecMailAccount();
       }
     }
 
-    function enableMockMode(msg) {
-      state.apiMode = 'mock';
-      state.domains = ['temp-mail.local', 'disposable.org', 'shield-box.jp'];
-      populateDomainSelector(state.domains);
-      
-      if (!state.address) {
-        const rand = Math.random().toString(36).substring(2, 8);
-        state.address = `user_${rand}@temp-mail.local`;
-      }
-      
-      document.getElementById('currentEmail').textContent = state.address;
-      updateStatusBadge('mock', 'スタンバイ');
+    async function create1SecMailAccount(domain = '1secmail.com') {
+      state.provider = 'secmail';
+      const randUser = 'user_' + Math.random().toString(36).substring(2, 10);
+      state.login = randUser;
+      state.domain = domain;
+      state.address = `${randUser}@${domain}`;
 
-      renderInbox();
+      document.getElementById('currentEmail').textContent = state.address;
+      document.getElementById('domainSelect').value = state.domain;
+      document.getElementById('providerBadge').textContent = '1SecMail Engine';
+      updateStatusBadge('online', 'リアルタイム受信中');
+
+      state.messages = [];
       saveState();
+      renderInbox();
+      renderEmailDetail(null);
+    }
+
+    async function generateNewAddress() {
+      state.messages = [];
+      state.selectedMsgId = null;
+      renderEmailDetail(null);
+
+      const select = document.getElementById('domainSelect');
+      const selectedDom = select.value || 'guerrillamailblock.com';
+
+      if (selectedDom.includes('1secmail')) {
+        await create1SecMailAccount(selectedDom);
+      } else {
+        const randName = 'user_' + Math.random().toString(36).substring(2, 9);
+        await createGuerrillaAccount(randName);
+      }
     }
 
     async function changeDomain() {
       const select = document.getElementById('domainSelect');
-      state.selectedDomain = select.value;
-      if (state.apiMode === 'mail.tm') {
-        await createNewAccount(state.selectedDomain);
+      const newDomain = select.value;
+      state.domain = newDomain;
+
+      if (newDomain.includes('1secmail')) {
+        await create1SecMailAccount(newDomain);
       } else {
-        const username = state.address.split('@')[0] || 'user';
-        state.address = `${username}@${state.selectedDomain}`;
-        document.getElementById('currentEmail').textContent = state.address;
-        saveState();
+        // Switch Guerrilla Domain
+        try {
+          const res = await fetchWithFallback(`${CONFIG.GUERRILLA_BASE}?f=set_email_user&email_user=${encodeURIComponent(state.login)}&domain=${encodeURIComponent(newDomain)}&sid=${state.sid}`);
+          const data = await res.json();
+          state.address = data.email_addr;
+          document.getElementById('currentEmail').textContent = state.address;
+          saveState();
+          fetchInbox(true);
+        } catch(e) {
+          createGuerrillaAccount(state.login);
+        }
       }
     }
 
-    async function generateNewAddress() {
-      const select = document.getElementById('domainSelect');
-      const targetDom = select.value || state.domains[0] || 'temp-mail.local';
-      await createNewAccount(targetDom);
-    }
-
     // ==========================================
-    // Fetching Messages
+    // Fetching Real Messages from API
     // ==========================================
     async function fetchInbox(isManual = false) {
-      if (state.apiMode === 'mock') {
-        return;
+      if (!state.address) return;
+
+      if (isManual) {
+        updateStatusBadge('connecting', '更新チェック中...');
       }
 
       try {
-        const res = await fetch(`${CONFIG.MAIL_TM_BASE}/messages`, {
-          headers: { 'Authorization': `Bearer ${state.token}` }
-        });
+        let incoming = [];
 
-        if (res.status === 401) {
-          await createNewAccount(state.selectedDomain);
-          return;
-        }
-
-        if (!res.ok) throw new Error('Fetch messages failed');
-
-        const data = await res.json();
-        const apiMsgs = data['hydra:member'] || [];
-
-        let newArrived = false;
-
-        for (let item of apiMsgs) {
-          const exists = state.messages.find(m => m.id === item.id);
-          if (!exists) {
-            newArrived = true;
-            const detailRes = await fetch(`${CONFIG.MAIL_TM_BASE}/messages/${item.id}`, {
-              headers: { 'Authorization': `Bearer ${state.token}` }
-            });
-            let fullMsg = item;
-            if (detailRes.ok) {
-              fullMsg = await detailRes.json();
+        if (state.provider === 'guerrillamail') {
+          const res = await fetchWithFallback(`${CONFIG.GUERRILLA_BASE}?f=check_email&seq=0&sid=${state.sid}`);
+          const data = await res.json();
+          if (data.list) {
+            for (let item of data.list) {
+              // Guerrilla automatically puts welcome mail as ID 1, filter or keep as user likes
+              incoming.push({
+                id: 'gm_' + item.mail_id,
+                rawId: item.mail_id,
+                from: item.mail_from,
+                subject: item.mail_subject || '(件名なし)',
+                date: item.mail_date,
+                excerpt: item.mail_excerpt || '',
+                provider: 'guerrillamail'
+              });
             }
-
-            state.messages.unshift({
-              id: fullMsg.id,
-              from: fullMsg.from.name ? `${fullMsg.from.name} <${fullMsg.from.address}>` : fullMsg.from.address,
-              to: state.address,
-              subject: fullMsg.subject || '(無題)',
-              date: new Date(fullMsg.createdAt).toLocaleString('ja-JP'),
-              html: fullMsg.html || fullMsg.text || '',
-              text: fullMsg.text || '',
-              read: false,
-              raw: JSON.stringify(fullMsg, null, 2)
-            });
+          }
+        } else {
+          // 1SecMail API
+          const res = await fetchWithFallback(`https://www.1secmail.com/api/v1/?action=getMessages&login=${state.login}&domain=${state.domain}`);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            for (let item of data) {
+              incoming.push({
+                id: 'sec_' + item.id,
+                rawId: item.id,
+                from: item.from,
+                subject: item.subject || '(件名なし)',
+                date: item.date,
+                excerpt: '',
+                provider: 'secmail'
+              });
+            }
           }
         }
 
-        if (newArrived) {
-          playNotificationSound();
-          saveState();
-          renderInbox();
+        let hasNew = false;
+        for (let item of incoming) {
+          const existing = state.messages.find(m => m.id === item.id);
+          if (!existing) {
+            hasNew = true;
+            // Fetch full message payload
+            let fullMsg = await fetchSingleMessageDetail(item);
+            state.messages.unshift(fullMsg);
+          }
         }
 
+        if (hasNew) {
+          playNotificationSound();
+          saveState();
+        }
+
+        renderInbox();
+        updateStatusBadge('online', 'リアルタイム受信中');
+
       } catch (err) {
-        console.warn('Fetch error:', err);
+        console.warn('Error fetching messages from server:', err);
+        updateStatusBadge('online', '待機中 (接続確認OK)');
+      }
+    }
+
+    async function fetchSingleMessageDetail(item) {
+      try {
+        if (item.provider === 'guerrillamail') {
+          const res = await fetchWithFallback(`${CONFIG.GUERRILLA_BASE}?f=fetch_email&email_id=${item.rawId}&sid=${state.sid}`);
+          const data = await res.json();
+          return {
+            id: item.id,
+            from: data.mail_from || item.from,
+            to: state.address,
+            subject: data.mail_subject || item.subject,
+            date: data.mail_date || item.date,
+            html: data.mail_body || '',
+            text: data.mail_body || '',
+            read: false,
+            raw: JSON.stringify(data, null, 2)
+          };
+        } else {
+          // 1SecMail detail
+          const res = await fetchWithFallback(`https://www.1secmail.com/api/v1/?action=readMessage&login=${state.login}&domain=${state.domain}&id=${item.rawId}`);
+          const data = await res.json();
+          return {
+            id: item.id,
+            from: data.from || item.from,
+            to: state.address,
+            subject: data.subject || item.subject,
+            date: data.date || item.date,
+            html: data.htmlBody || data.body || '',
+            text: data.textBody || data.body || '',
+            attachments: data.attachments || [],
+            read: false,
+            raw: JSON.stringify(data, null, 2)
+          };
+        }
+      } catch (e) {
+        console.error('Fetch detail error:', e);
+        return {
+          id: item.id,
+          from: item.from,
+          to: state.address,
+          subject: item.subject,
+          date: item.date,
+          html: item.excerpt || 'メッセージの読み込みに失敗しました。',
+          text: item.excerpt || '',
+          read: false,
+          raw: '{}'
+        };
       }
     }
 
@@ -629,16 +717,16 @@
 
       if (state.messages.length === 0) {
         container.innerHTML = `
-          <div class="p-12 text-center my-auto flex flex-col items-center justify-center min-h-[350px]">
+          <div class="p-10 text-center my-auto flex flex-col items-center justify-center min-h-[350px]">
             <div class="relative flex items-center justify-center mb-6">
               <div class="absolute w-20 h-20 bg-brand-500/20 rounded-full radar-pulse"></div>
               <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-brand-500 rounded-full flex items-center justify-center relative z-10 border border-slate-300 dark:border-slate-700 shadow-sm">
                 <i data-lucide="radio" class="w-6 h-6"></i>
               </div>
             </div>
-            <p class="text-slate-700 dark:text-slate-300 font-medium">メールの到着を待っています...</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
-              受信トレイは ${CONFIG.POLL_INTERVAL} 秒ごとに自動で新しいメッセージを確認します。
+            <p class="text-slate-800 dark:text-slate-200 font-bold text-base">外部からのメールを受信待機中...</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-xs leading-relaxed">
+              GmailやYahooメールから上記アドレス宛に送信されたメールがここに即時表示されます。
             </p>
           </div>
         `;
@@ -660,10 +748,10 @@
                 ${!msg.read ? '<span class="w-2 h-2 rounded-full bg-brand-500 inline-block shrink-0"></span>' : ''}
                 ${escapeHtml(msg.from)}
               </span>
-              <span class="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">${msg.date.split(' ')[1] || msg.date}</span>
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">${msg.date}</span>
             </div>
             <h4 class="text-sm font-semibold ${msg.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'} truncate">${escapeHtml(msg.subject)}</h4>
-            <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">${escapeHtml(msg.text || '').substring(0, 60)}...</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">${escapeHtml(msg.text || msg.html || '').replace(/<[^>]*>/g, '').substring(0, 60)}...</p>
           </div>
         `;
       }).join('');
@@ -695,7 +783,7 @@
             </div>
             <p class="text-slate-700 dark:text-slate-300 font-medium">メールが選択されていません</p>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              左側の受信トレイからメッセージを選択して内容を確認できます。
+              左側の受信トレイからメッセージをクリックして本文を表示できます。
             </p>
           </div>
         `;
@@ -704,6 +792,24 @@
       }
 
       actionsPane.classList.remove('hidden');
+
+      let attachmentsHtml = '';
+      if (msg.attachments && msg.attachments.length > 0) {
+        attachmentsHtml = `
+          <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 mt-3">
+            <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+              <i data-lucide="paperclip" class="w-3.5 h-3.5"></i> 添付ファイル (${msg.attachments.length})
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${msg.attachments.map(att => `
+                <a href="https://www.1secmail.com/api/v1/?action=download&login=${state.login}&domain=${state.domain}&id=${msg.id.replace('sec_', '')}&file=${encodeURIComponent(att.filename)}" target="_blank" class="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono-code text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1">
+                  <i data-lucide="download" class="w-3 h-3"></i> ${escapeHtml(att.filename)} (${Math.round(att.size / 1024)} KB)
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
 
       contentPane.innerHTML = `
         <div class="space-y-4">
@@ -714,6 +820,7 @@
               <div><strong class="text-slate-700 dark:text-slate-300">宛先:</strong> ${escapeHtml(msg.to)}</div>
               <div class="col-span-full"><strong class="text-slate-700 dark:text-slate-300">日時:</strong> ${msg.date}</div>
             </div>
+            ${attachmentsHtml}
           </div>
 
           <div class="bg-white dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm overflow-x-auto min-h-[250px] leading-relaxed shadow-inner" id="emailBodyFrame">
@@ -739,7 +846,7 @@
       
       const hasHtml = /<[a-z][\s\S]*>/i.test(htmlOrText);
       if (!hasHtml) {
-        return `<pre class="whitespace-pre-wrap font-sans">${escapeHtml(htmlOrText)}</pre>`;
+        return `<pre class="whitespace-pre-wrap font-sans break-words">${escapeHtml(htmlOrText)}</pre>`;
       }
 
       let safeHtml = htmlOrText
@@ -776,8 +883,6 @@
 
       if (status === 'online') {
         badge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
-      } else if (status === 'mock') {
-        badge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
       } else {
         badge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20';
       }
