@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Tester & Inspector</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Monaco Editor / CodeMirror alternative or lightweight syntax highlighter library using simple textarea + sync -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-2.5 flex items-center justify-between shadow-sm z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 text-white p-2 rounded-lg shadow-sm">
+                <i class="fa-solid me-0 fa-paper-plane text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-900 dark:text-white text-base leading-tight">Email Test & Preview Lab</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Design, Analyze, & Simulate Email Delivery</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 md:space-x-3">
+            <!-- Quick Action Buttons -->
+            <button onclick="loadTemplateModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-layer-group text-sky-500"></i>
+                <span>Templates</span>
+            </button>
+
+            <button onclick="runDeliverabilityCheck()" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-amber-500"></i>
+                <span>Spam Check</span>
+            </button>
+
+            <button onclick="openSendModal()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition flex items-center gap-1.5">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Send Test Email</span>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button id="themeToggle" onclick="toggleDarkMode()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 transition" title="Toggle Light/Dark Theme">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:inline"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Left Sidebar: Email Metadata & Config -->
+        <aside class="w-80 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 overflow-y-auto">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Email Envelope Info</h2>
+                
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Sender Name</label>
+                        <input type="text" id="senderName" value="Acme Marketing Team" oninput="updateEnvelope()" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">From Email Address</label>
+                        <input type="email" id="senderEmail" value="newsletter@acme.com" oninput="updateEnvelope()" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Subject Line</label>
+                        <input type="text" id="emailSubject" value="🎉 Special Offer Just for You!" oninput="updateEnvelope(); checkSpamScore();" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
+                        <div class="flex justify-between items-center mt-1 text-[10px] text-slate-400">
+                            <span id="subjectCharCount">29 chars</span>
+                            <span id="subjectStatus" class="text-emerald-500">Good length</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Preheader Text (Preview Snippet)</label>
+                        <textarea id="emailPreheader" rows="2" oninput="updateEnvelope()" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none resize-none">Don't miss our exclusive discounts inside this issue!</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spam & Health Quick Widget -->
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Deliverability Score</span>
+                    <span id="spamScoreBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">92/100</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden mb-3">
+                    <div id="spamProgressBar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 92%;"></div>
+                </div>
+                <div id="spamQuickAlerts" class="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                    <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check text-[10px]"></i> Subject length optimal</div>
+                    <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check text-[10px]"></i> Image ALT attributes present</div>
+                </div>
+                <button onclick="toggleSpamPanel()" class="w-full mt-3 text-xs text-sky-600 dark:text-sky-400 hover:underline text-left font-medium flex items-center justify-between">
+                    <span>View Detailed Analysis Report</span>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
+            </div>
+
+            <!-- Email Client Live Inbox Simulation -->
+            <div class="p-4 flex-1">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Inbox Preview Card</h2>
+                <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm cursor-default">
+                    <div class="flex justify-between items-start mb-1">
+                        <span id="previewSender" class="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[170px]">Acme Marketing Team</span>
+                        <span class="text-[10px] text-slate-400 shrink-0">10:52 AM</span>
+                    </div>
+                    <div id="previewSubject" class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate mb-1">🎉 Special Offer Just for You!</div>
+                    <div id="previewSnippet" class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">Don't miss our exclusive discounts inside this issue!</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Work Area: Editor & Live Viewport -->
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-100 dark:bg-slate-950 overflow-hidden">
+            
+            <!-- Editor Sub-Header Toolbar -->
+            <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                
+                <!-- View Mode Controls (HTML Code vs Visual vs Split) -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+                    <button id="btnModeSplit" onclick="setEditorLayout('split')" class="px-2.5 py-1 rounded-md font-medium bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-100">Split View</button>
+                    <button id="btnModeCode" onclick="setEditorLayout('code')" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Code Only</button>
+                    <button id="btnModeVisual" onclick="setEditorLayout('visual')" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Preview Only</button>
+                </div>
+
+                <!-- Preview Viewport Switcher -->
+                <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <button onclick="setViewport('desktop')" id="vpDesktop" class="p-1.5 rounded-md text-xs font-medium bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm" title="Desktop View (100%)">
+                        <i class="fa-solid fa-desktop px-1"></i>
+                    </button>
+                    <button onclick="setViewport('tablet')" id="vpTablet" class="p-1.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" title="Tablet View (768px)">
+                        <i class="fa-solid fa-tablet-screen-button px-1"></i>
+                    </button>
+                    <button onclick="setViewport('mobile')" id="vpMobile" class="p-1.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" title="Mobile View (375px)">
+                        <i class="fa-solid fa-mobile-screen-button px-1"></i>
+                    </button>
+                </div>
+
+                <!-- Formatting & Code Tools -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="formatHTMLCode()" class="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 transition" title="Format HTML Code">
+                        <i class="fa-solid fa-code me-1"></i> Format Code
+                    </button>
+                    <button onclick="copyHTMLCode()" class="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 transition" title="Copy Raw HTML">
+                        <i class="fa-solid fa-copy me-1"></i> Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspace Editor & Preview Pane Split View -->
+            <div id="editorContainer" class="flex-1 flex overflow-hidden relative">
+                
+                <!-- Left Pane: Code Editor -->
+                <div id="codePane" class="w-1/2 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100">
+                    <div class="bg-slate-950 px-3 py-1.5 text-[11px] font-mono text-slate-400 flex justify-between items-center border-b border-slate-800">
+                        <span>HTML EDITOR</span>
+                        <span id="codeLengthBadge">0 chars</span>
+                    </div>
+                    <textarea id="htmlSourceCode" class="w-full flex-1 p-4 bg-transparent text-emerald-400 code-font text-xs leading-relaxed focus:outline-none resize-none" spellcheck="false" placeholder="Type or paste your HTML email template code here..."></textarea>
+                </div>
+
+                <!-- Right Pane: Real-time Render Viewport -->
+                <div id="previewPane" class="w-1/2 bg-slate-200 dark:bg-slate-950 flex flex-col items-center p-4 overflow-y-auto transition-all duration-300">
+                    <div id="iframeFrame" class="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 flex flex-col">
+                        <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                            </span>
+                            <span id="viewportDimensionsLabel" class="font-mono text-[11px]">100% Responsive</span>
+                        </div>
+                        <iframe id="emailIframe" class="w-full flex-1 bg-white border-0"></iframe>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right Side Drawer: Detailed Spam & Deliverability Analysis (Hidden by Default) -->
+        <aside id="spamDrawer" class="hidden w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col z-10 shrink-0">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-sky-500"></i>
+                    Deliverability Report
+                </h2>
+                <button onclick="toggleSpamPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-4 flex-1 overflow-y-auto space-y-4 text-xs">
+                <!-- Score Breakdown -->
+                <div class="text-center p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div id="drawerScoreVal" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">92</div>
+                    <div class="text-slate-500 text-[11px] font-medium mt-1">Overall Health Score</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Low risk of hitting spam filters</div>
+                </div>
+
+                <!-- Detailed Rules List -->
+                <div>
+                    <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-2">Content Diagnostics</h3>
+                    <div id="spamRulesList" class="space-y-2">
+                        <!-- Dynamic items generated by JS -->
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-2">Detected Keyword Triggers</h3>
+                    <div id="triggerWordsList" class="flex flex-wrap gap-1">
+                        <!-- Dynamic keywords -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Modal 1: Send Test Email Interface -->
+    <div id="sendModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-sky-500"></i> Send Test Email
+                </h3>
+                <button onclick="closeSendModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Recipient Email Address(es)</label>
+                    <input type="email" id="testRecipient" value="reviewer@example.com" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" placeholder="test@example.com">
+                    <p class="text-[10px] text-slate-400 mt-1">Separate multiple email addresses with commas.</p>
+                </div>
+
+                <div>
+                    <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Sending Mode / Protocol</label>
+                    <select id="sendMethodSelect" onchange="toggleSendMethodFields()" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
+                        <option value="simulator">Interactive SMTP Simulator (Detailed Relay Logs)</option>
+                        <option value="webhook">Custom Webhook / API Endpoint (POST)</option>
+                    </select>
+                </div>
+
+                <div id="webhookFields" class="hidden space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div>
+                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook Endpoint URL</label>
+                        <input type="url" id="webhookUrl" placeholder="https://api.emailjs.com/api/v1.0/email/send" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none">
+                    </div>
+                </div>
+
+                <!-- Execution Terminal Logs Area -->
+                <div id="smtpLogConsole" class="hidden bg-slate-950 p-3 rounded-lg border border-slate-800 code-font text-[11px] text-emerald-400 h-32 overflow-y-auto space-y-1">
+                    <div>[SMTP] Connecting to mx.simulated-relay.org:25...</div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-2">
+                <button onclick="closeSendModal()" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Cancel</button>
+                <button id="dispatchSendBtn" onclick="executeEmailDispatch()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-paper-plane"></i> Dispatch Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Preset Email Templates Selector -->
+    <div id="templateModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-sky-500"></i> Choose Pre-built Email Template
+                </h3>
+                <button onclick="closeTemplateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs max-h-[70vh] overflow-y-auto">
+                
+                <!-- Card 1: Promotional -->
+                <div onclick="selectPresetTemplate('promo')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
+                    <div class="w-10 h-10 rounded-lg bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Promotional Sale</h4>
+                    <p class="text-slate-500 dark:text-slate-400">Eye-catching layout with CTA buttons, highlight banners, and discount codes.</p>
+                </div>
+
+                <!-- Card 2: Welcome -->
+                <div onclick="selectPresetTemplate('welcome')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-hand-wave"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Welcome Onboarding</h4>
+                    <p class="text-slate-500 dark:text-slate-400">Warm introduction email for new user signups with setup instructions.</p>
+                </div>
+
+                <!-- Card 3: Newsletter -->
+                <div onclick="selectPresetTemplate('newsletter')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-newspaper"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Weekly Digest</h4>
+                    <p class="text-slate-500 dark:text-slate-400">Clean content layout for blogs, article roundups, and company updates.</p>
+                </div>
+
+                <!-- Card 4: Password Reset -->
+                <div onclick="selectPresetTemplate('reset')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
+                    <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Transactional Security</h4>
+                    <p class="text-slate-500 dark:text-slate-400">Simple, urgent security email with verification button and expiry warning.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Box -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 text-xs flex items-center gap-2 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMsg">Action completed successfully.</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Pre-defined Email Templates HTML Code
+        const TEMPLATES = {
+            promo: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .header { background: #0284c7; padding: 30px; text-align: center; color: #ffffff; }
+        .content { padding: 30px; color: #333333; line-height: 1.6; }
+        .btn { display: inline-block; background: #0284c7; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; margin-top: 15px; }
+        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0;">Exclusive 50% Off Flash Sale!</h1>
+        </div>
+        <div class="content">
+            <h2>Hello Valued Customer,</h2>
+            <p>For the next 24 hours, enjoy a massive discount across our entire catalog. Upgrade your toolkit with premium features at half the price!</p>
+            <p align="center">
+                <a href="https://example.com/shop" class="btn">Claim Discount Now</a>
+            </p>
+            <p style="font-size: 12px; color: #64748b;">*Offer valid until midnight. Terms and conditions apply.</p>
+        </div>
+        <div class="footer">
+            <p>© 2026 Acme Corp. All rights reserved.</p>
+            <p><a href="https://example.com/unsubscribe" style="color:#94a3b8;">Unsubscribe</a></p>
+        </div>
+    </div>
+</body>
+</html>`,
+
+            welcome: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; }
+        .card { max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px; }
+        .logo { font-size: 24px; font-weight: bold; color: #0f172a; margin-bottom: 24px; }
+        .cta-btn { display: inline-block; background-color: #10b981; color: white !important; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+        .footer { margin-top: 30px; pt: 20px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">🚀 Acme Tech</div>
+        <h1 style="color: #0f172a; font-size: 22px;">Welcome to the future of emails!</h1>
+        <p style="color: #475569; line-height: 1.6;">We are super excited to have you on board. Your new account is fully active and ready to go.</p>
+        <p style="color: #475569; line-height: 1.6;">Click below to access your dashboard and start configuring your workspace:</p>
+        <a href="https://example.com/dashboard" class="cta-btn">Go to Dashboard</a>
+        <div class="footer">
+            Need help? Reply to this email or visit our Help Center.<br>
+            Acme Inc, 123 Tech Way, Suite 400
+        </div>
+    </div>
+</body>
+</html>`,
+
+            newsletter: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Georgia, serif; background: #f1f5f9; margin:0; padding: 20px; }
+        .wrap { max-width: 620px; margin: 0 auto; background: #ffffff; padding: 35px; border-radius: 6px; }
+        .title { font-size: 28px; font-weight: normal; border-bottom: 2px solid #0284c7; padding-bottom: 10px; }
+        .article { margin-bottom: 25px; }
+        .article h3 { font-size: 18px; color: #0f172a; margin-bottom: 8px; }
+        .article p { color: #334155; line-height: 1.7; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="title">The Weekly Tech Digest</div>
+        <p style="font-style: italic; color: #64748b; font-size: 13px;">Issue #142 • October 2026</p>
+        
+        <div class="article">
+            <h3>1. Understanding Modern Email Deliverability</h3>
+            <p>Email spam filters have evolved. Modern filters analyze engagement rates, domain reputation, and markup structure rather than just subject line keywords...</p>
+        </div>
+
+        <div class="article">
+            <h3>2. Responsive Design Without Media Queries</h3>
+            <p>Using fluid layout techniques like flexbox and max-width rules ensures your HTML renders consistently across mobile and desktop clients...</p>
+        </div>
+
+        <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 40px;">
+            You received this because you are subscribed to Weekly Digest.<br>
+            <a href="https://example.com/unsubscribe" style="color: #0284c7;">Unsubscribe anytime</a>
+        </p>
+    </div>
+</body>
+</html>`,
+
+            reset: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; padding: 20px; }
+        .box { max-width: 480px; margin: 20px auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; text-align: center; }
+        .btn-reset { display: inline-block; background-color: #ef4444; color: white !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 style="margin-top:0; color:#0f172a;">Password Reset Request</h2>
+        <p style="color:#475569; font-size: 14px; line-height: 1.5;">We received a request to reset your password. Click the button below to choose a new password:</p>
+        <a href="https://example.com/reset-password?token=xyz123" class="btn-reset">Reset Password</a>
+        <p style="color:#94a3b8; font-size: 12px;">If you did not request this reset, please ignore this email. This link will expire in 30 minutes.</p>
+    </div>
+</body>
+</html>`
+        };
+
+        // State variables
+        let currentLayout = 'split'; // 'split', 'code', 'visual'
+        let currentViewport = 'desktop'; // 'desktop', 'tablet', 'mobile'
+
+        // Initialization on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            const codeInput = document.getElementById('htmlSourceCode');
+            
+            // Set initial default code
+            codeInput.value = TEMPLATES.promo;
+            
+            // Sync initial events
+            codeInput.addEventListener('input', () => {
+                updateIframePreview();
+                updateCodeBadge();
+                checkSpamScore();
+            });
+
+            updateIframePreview();
+            updateCodeBadge();
+            updateEnvelope();
+            checkSpamScore();
+        });
+
+        // Update real-time iframe output
+        function updateIframePreview() {
+            const htmlContent = document.getElementById('htmlSourceCode').value;
+            const iframe = document.getElementById('emailIframe');
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            
+            iframeDoc.open();
+            iframeDoc.write(htmlContent);
+            iframeDoc.close();
+        }
+
+        // Update envelope metadata preview
+        function updateEnvelope() {
+            const sender = document.getElementById('senderName').value || 'Sender Name';
+            const email = document.getElementById('senderEmail').value || 'sender@domain.com';
+            const subject = document.getElementById('emailSubject').value || '(No Subject)';
+            const snippet = document.getElementById('emailPreheader').value || '';
+
+            document.getElementById('previewSender').textContent = `${sender} (${email})`;
+            document.getElementById('previewSubject').textContent = subject;
+            document.getElementById('previewSnippet').textContent = snippet;
+
+            // Subject length counter
+            const subjectLen = subject.length;
+            document.getElementById('subjectCharCount').textContent = `${subjectLen} chars`;
+            
+            const statusEl = document.getElementById('subjectStatus');
+            if (subjectLen === 0) {
+                statusEl.textContent = 'Missing subject';
+                statusEl.className = 'text-red-500';
+            } else if (subjectLen > 60) {
+                statusEl.textContent = 'Too long (may truncate)';
+                statusEl.className = 'text-amber-500';
+            } else if (subjectLen < 10) {
+                statusEl.textContent = 'Too short';
+                statusEl.className = 'text-amber-500';
+            } else {
+                statusEl.textContent = 'Good length';
+                statusEl.className = 'text-emerald-500';
+            }
+        }
+
+        // Code character counter
+        function updateCodeBadge() {
+            const len = document.getElementById('htmlSourceCode').value.length;
+            document.getElementById('codeLengthBadge').textContent = `${len.toLocaleString()} chars`;
+        }
+
+        // Layout Switcher (Split vs Code vs Visual)
+        function setEditorLayout(mode) {
+            currentLayout = mode;
+            const codePane = document.getElementById('codePane');
+            const previewPane = document.getElementById('previewPane');
+
+            // Reset buttons styling
+            ['Split', 'Code', 'Visual'].forEach(m => {
+                const btn = document.getElementById(`btnMode${m}`);
+                if (m.toLowerCase() === mode) {
+                    btn.className = 'px-2.5 py-1 rounded-md font-medium bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-100';
+                } else {
+                    btn.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+                }
+            });
+
+            if (mode === 'split') {
+                codePane.classList.remove('hidden');
+                codePane.className = 'w-1/2 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100';
+                previewPane.classList.remove('hidden');
+                previewPane.className = 'w-1/2 bg-slate-200 dark:bg-slate-950 flex flex-col items-center p-4 overflow-y-auto transition-all duration-300';
+            } else if (mode === 'code') {
+                codePane.classList.remove('hidden');
+                codePane.className = 'w-full flex flex-col bg-slate-900 text-slate-100';
+                previewPane.classList.add('hidden');
+            } else if (mode === 'visual') {
+                codePane.classList.add('hidden');
+                previewPane.classList.remove('hidden');
+                previewPane.className = 'w-full bg-slate-200 dark:bg-slate-950 flex flex-col items-center p-4 overflow-y-auto transition-all duration-300';
+            }
+        }
+
+        // Viewport Resizer
+        function setViewport(vp) {
+            currentViewport = vp;
+            const frame = document.getElementById('iframeFrame');
+            const label = document.getElementById('viewportDimensionsLabel');
+
+            ['Desktop', 'Tablet', 'Mobile'].forEach(v => {
+                const btn = document.getElementById(`vp${v}`);
+                if (v.toLowerCase() === vp) {
+                    btn.className = 'p-1.5 rounded-md text-xs font-medium bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm';
+                } else {
+                    btn.className = 'p-1.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+                }
+            });
+
+            if (vp === 'desktop') {
+                frame.style.width = '100%';
+                frame.style.height = '100%';
+                label.textContent = '100% Responsive Desktop';
+            } else if (vp === 'tablet') {
+                frame.style.width = '768px';
+                frame.style.height = '100%';
+                label.textContent = 'Tablet Viewport (768px)';
+            } else if (vp === 'mobile') {
+                frame.style.width = '375px';
+                frame.style.height = '667px';
+                label.textContent = 'Mobile Viewport (375px)';
+            }
+        }
+
+        // Deliverability & Spam Analysis Engine
+        function checkSpamScore() {
+            const subject = document.getElementById('emailSubject').value.toLowerCase();
+            const html = document.getElementById('htmlSourceCode').value.toLowerCase();
+            
+            let score = 100;
+            const rules = [];
+            const triggersFound = [];
+
+            // Trigger words list
+            const spamKeywords = ['100% free', '50% off', 'buy now', 'cheap', 'click here', 'discount', 'extra income', 'guarantee', 'make money', 'no obligation', 'offer', 'urgent', 'winner', 'free'];
+
+            spamKeywords.forEach(kw => {
+                if (subject.includes(kw) || html.includes(kw)) {
+                    triggersFound.push(kw);
+                }
+            });
+
+            if (triggersFound.length > 0) {
+                const penalty = Math.min(triggersFound.length * 5, 25);
+                score -= penalty;
+                rules.push({
+                    pass: false,
+                    msg: `Contains promotional trigger words (${triggersFound.length} detected)`
+                });
+            } else {
+                rules.push({ pass: true, msg: 'No suspicious spam trigger keywords detected' });
+            }
+
+            // Subject Length Check
+            if (subject.length === 0) {
+                score -= 30;
+                rules.push({ pass: false, msg: 'Subject line is completely empty' });
+            } else if (subject.length > 70) {
+                score -= 10;
+                rules.push({ pass: false, msg: 'Subject line exceeds 70 characters' });
+            } else {
+                rules.push({ pass: true, msg: 'Subject line length is optimal' });
+            }
+
+            // Image ALT check
+            if (html.includes('<img')) {
+                if (html.includes('alt=')) {
+                    rules.push({ pass: true, msg: 'Image elements include ALT descriptions' });
+                } else {
+                    score -= 15;
+                    rules.push({ pass: false, msg: 'Images missing ALT attributes' });
+                }
+            }
+
+            // Unsubscribe link check
+            if (html.includes('unsubscribe')) {
+                rules.push({ pass: true, msg: 'Unsubscribe compliance option found' });
+            } else {
+                score -= 20;
+                rules.push({ pass: false, msg: 'Missing visible Unsubscribe option' });
+            }
+
+            // Update UI Score Indicators
+            score = Math.max(0, score);
+            const scoreBadge = document.getElementById('spamScoreBadge');
+            const scoreBar = document.getElementById('spamProgressBar');
+            
+            scoreBadge.textContent = `${score}/100`;
+            scoreBar.style.width = `${score}%`;
+
+            if (score >= 80) {
+                scoreBadge.className = 'px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300';
+                scoreBar.className = 'bg-emerald-500 h-full transition-all duration-300';
+            } else if (score >= 60) {
+                scoreBadge.className = 'px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300';
+                scoreBar.className = 'bg-amber-500 h-full transition-all duration-300';
+            } else {
+                scoreBadge.className = 'px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300';
+                scoreBar.className = 'bg-red-500 h-full transition-all duration-300';
+            }
+
+            // Populate Quick Alerts widget
+            const quickAlerts = document.getElementById('spamQuickAlerts');
+            quickAlerts.innerHTML = rules.slice(0, 2).map(r => `
+                <div class="flex items-center gap-1.5 ${r.pass ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}">
+                    <i class="fa-solid ${r.pass ? 'fa-check' : 'fa-triangle-exclamation'} text-[10px]"></i>
+                    <span class="truncate">${r.msg}</span>
+                </div>
+            `).join('');
+
+            // Populate Drawer Details
+            document.getElementById('drawerScoreVal').textContent = score;
+            const rulesList = document.getElementById('spamRulesList');
+            rulesList.innerHTML = rules.map(r => `
+                <div class="p-2 rounded-lg border ${r.pass ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300' : 'border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300'} flex items-start gap-2">
+                    <i class="fa-solid ${r.pass ? 'fa-circle-check text-emerald-500' : 'fa-triangle-exclamation text-amber-500'} mt-0.5"></i>
+                    <span>${r.msg}</span>
+                </div>
+            `).join('');
+
+            const kwList = document.getElementById('triggerWordsList');
+            if (triggersFound.length === 0) {
+                kwList.innerHTML = `<span class="text-slate-400 italic">None found</span>`;
+            } else {
+                kwList.innerHTML = triggersFound.map(t => `<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 rounded text-[10px] font-mono">${t}</span>`).join('');
+            }
+        }
+
+        // Toggle Right Spam Drawer
+        function toggleSpamPanel() {
+            const drawer = document.getElementById('spamDrawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        function runDeliverabilityCheck() {
+            checkSpamScore();
+            const drawer = document.getElementById('spamDrawer');
+            drawer.classList.remove('hidden');
+        }
+
+        // Modals Management
+        function openSendModal() {
+            document.getElementById('sendModal').classList.remove('hidden');
+        }
+
+        function closeSendModal() {
+            document.getElementById('sendModal').classList.add('hidden');
+            document.getElementById('smtpLogConsole').classList.add('hidden');
+        }
+
+        function loadTemplateModal() {
+            document.getElementById('templateModal').classList.remove('hidden');
+        }
+
+        function closeTemplateModal() {
+            document.getElementById('templateModal').classList.add('hidden');
+        }
+
+        function selectPresetTemplate(key) {
+            if (TEMPLATES[key]) {
+                document.getElementById('htmlSourceCode').value = TEMPLATES[key];
+                updateIframePreview();
+                updateCodeBadge();
+                checkSpamScore();
+                closeTemplateModal();
+                showToast("Template loaded successfully!");
+            }
+        }
+
+        function toggleSendMethodFields() {
+            const val = document.getElementById('sendMethodSelect').value;
+            const webhookDiv = document.getElementById('webhookFields');
+            if (val === 'webhook') {
+                webhookDiv.classList.remove('hidden');
+            } else {
+                webhookDiv.classList.add('hidden');
+            }
+        }
+
+        // Simulate interactive Email Delivery / SMTP Relay
+        function executeEmailDispatch() {
+            const method = document.getElementById('sendMethodSelect').value;
+            const recipient = document.getElementById('testRecipient').value;
+
+            if (!recipient) {
+                showToast("Please enter a valid recipient email.", true);
+                return;
+            }
+
+            const btn = document.getElementById('dispatchSendBtn');
+            const logBox = document.getElementById('smtpLogConsole');
+            logBox.classList.remove('hidden');
+            logBox.innerHTML = '';
+
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            const logs = [
+                `[SMTP] Connecting to mail relay service...`,
+                `[SMTP] AUTH PLAIN LOGIN SSL/TLS (Port 587)...`,
+                `[SMTP] 250 OK: Handshake accepted`,
+                `[MAIL FROM] <${document.getElementById('senderEmail').value}>`,
+                `[RCPT TO] <${recipient}>`,
+                `[DATA] Transmitting HTML payload (${document.getElementById('htmlSourceCode').value.length} bytes)...`,
+                `[250 2.0.0] Message queued successfully! ID: msg_${Math.random().toString(36).substring(7)}`
+            ];
+
+            let idx = 0;
+            const interval = setInterval(() => {
+                if (idx < logs.length) {
+                    const logLine = document.createElement('div');
+                    logLine.textContent = logs[idx];
+                    logBox.appendChild(logLine);
+                    logBox.scrollTop = logBox.scrollHeight;
+                    idx++;
+                } else {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                    showToast(`Test email dispatched to ${recipient}!`);
+                }
+            }, 400);
+        }
+
+        // Utilities: Copy HTML & Code Formatting
+        function copyHTMLCode() {
+            const code = document.getElementById('htmlSourceCode').value;
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = code;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+            showToast("HTML Code copied to clipboard!");
+        }
+
+        function formatHTMLCode() {
+            const textarea = document.getElementById('htmlSourceCode');
+            let text = textarea.value;
+            
+            // Simple auto-indentation/formatting algorithm for quick cleanup
+            let formatted = '';
+            let pad = 0;
+            text.split(/>\s*</).forEach(node => {
+                let indent = 0;
+                if (node.match( /^\/\w/ )) {
+                    pad -= 1;
+                } else if (node.match( /^[\w+=]/ ) && !node.match( /\/>$/ )) {
+                    indent = 1;
+                }
+                let padding = '';
+                for (let i = 0; i < pad; i++) {
+                    padding += '  ';
+                }
+                formatted += padding + '<' + node + '>\n';
+                pad += indent;
+            });
+            
+            textarea.value = formatted.trim();
+            updateCodeBadge();
+            showToast("Code reformatted!");
+        }
+
+        // Dark Mode Toggle
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+            }
+        }
+
+        // Toast Popup Helper
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            if (isError) {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-red-400 text-base";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
