@@ -1,907 +1,880 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full light">
+<html lang="ja" class="dark h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Tester & Inspector</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                        }
-                    }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TempMail Pro - 捨てメアド作成 & 受信専用ボックス</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
             }
+          }
         }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Monaco Editor / CodeMirror alternative or lightweight syntax highlighter library using simple textarea + sync -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .code-font {
-            font-family: 'Fira Code', monospace;
-        }
-        /* Custom scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        .dark ::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-full flex flex-col transition-colors duration-200">
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QRCode.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Google Fonts Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .dark ::-webkit-scrollbar-track { background: #0f172a; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    <!-- Top Navigation Header -->
-    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-2.5 flex items-center justify-between shadow-sm z-20 shrink-0">
-        <div class="flex items-center space-x-3">
-            <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 text-white p-2 rounded-lg shadow-sm">
-                <i class="fa-solid me-0 fa-paper-plane text-lg"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-slate-900 dark:text-white text-base leading-tight">Email Test & Preview Lab</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Design, Analyze, & Simulate Email Delivery</p>
-            </div>
+    /* Radar pulse animation for empty inbox */
+    @keyframes radar-sweep {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .radar-pulse {
+      animation: radar-sweep 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+  <!-- Header -->
+  <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- App Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20 text-white">
+          <i data-lucide="mail-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            TempMail Pro
+            <span class="text-xs font-normal text-slate-500 dark:text-slate-400 hidden sm:inline-block">/ 捨てメアド作成 & 受信</span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">登録不要・完全匿名のメール受信ボックス</p>
+        </div>
+      </div>
+
+      <!-- Connection Status & Top Controls -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span id="statusText">オンライン</span>
         </div>
 
-        <div class="flex items-center space-x-2 md:space-x-3">
+        <!-- Sound Alert Toggle -->
+        <button id="soundToggleBtn" onclick="toggleSound()" title="着信音切り替え" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700">
+          <i id="soundIcon" data-lucide="volume-2" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" title="テーマ切り替え" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700">
+          <i id="themeIcon" data-lucide="sun" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Active Email Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden transition-colors">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        
+        <!-- Address & Domain Controls -->
+        <div class="space-y-3 flex-1">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-brand-500"></i>
+              現在の使い捨てアドレス
+            </div>
+            <!-- Auto sync countdown -->
+            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 animate-spin text-brand-500" style="animation-duration: 4s;"></i>
+              <span>自動同期: <span id="refreshTimer" class="font-mono-code font-bold text-slate-800 dark:text-slate-200">5</span>秒</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Email Display -->
+            <div id="emailDisplayContainer" class="flex-1 min-w-[280px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between focus-within:border-brand-500 transition-colors shadow-inner">
+              <span id="currentEmail" class="font-mono-code text-lg sm:text-xl font-bold text-brand-600 dark:text-brand-100 select-all truncate">
+                生成中...
+              </span>
+              <span id="copySuccessBadge" class="hidden text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 px-2.5 py-1 rounded-md font-sans font-medium ml-2 shrink-0">
+                コピー完了!
+              </span>
+            </div>
+            
             <!-- Quick Action Buttons -->
-            <button onclick="loadTemplateModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-layer-group text-sky-500"></i>
-                <span>Templates</span>
+            <button onclick="copyAddress()" class="px-4 py-3 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-medium rounded-xl transition-all shadow-md shadow-brand-600/20 flex items-center gap-2 text-sm">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+              <span>コピー</span>
             </button>
+            <button onclick="generateNewAddress()" class="px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-slate-800 dark:text-slate-200 font-medium rounded-xl border border-slate-300 dark:border-slate-700 transition-all flex items-center gap-2 text-sm">
+              <i data-lucide="sparkles" class="w-4 h-4 text-brand-500"></i>
+              <span>アドレス変更</span>
+            </button>
+            <button onclick="toggleQrModal()" class="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-slate-700 transition-all" title="QRコードを表示">
+              <i data-lucide="qr-code" class="w-5 h-5"></i>
+            </button>
+          </div>
 
-            <button onclick="runDeliverabilityCheck()" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-shield-halved text-amber-500"></i>
-                <span>Spam Check</span>
-            </button>
-
-            <button onclick="openSendModal()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-500 text-white shadow-sm transition flex items-center gap-1.5">
-                <i class="fa-solid fa-paper-plane"></i>
-                <span>Send Test Email</span>
-            </button>
-
-            <!-- Theme Toggle -->
-            <button id="themeToggle" onclick="toggleDarkMode()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 transition" title="Toggle Light/Dark Theme">
-                <i class="fa-solid fa-moon dark:hidden"></i>
-                <i class="fa-solid fa-sun hidden dark:inline"></i>
-            </button>
+          <!-- Domain Selector -->
+          <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">
+            <label for="domainSelect" class="font-medium">ドメイン変更:</label>
+            <select id="domainSelect" onchange="changeDomain()" class="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-brand-500 font-mono-code text-xs">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
         </div>
-    </header>
-
-    <!-- Main Workspace Container -->
-    <main class="flex-1 flex overflow-hidden relative">
-        
-        <!-- Left Sidebar: Email Metadata & Config -->
-        <aside class="w-80 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 overflow-y-auto">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Email Envelope Info</h2>
-                
-                <div class="space-y-3 text-xs">
-                    <div>
-                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Sender Name</label>
-                        <input type="text" id="senderName" value="Acme Marketing Team" oninput="updateEnvelope()" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">From Email Address</label>
-                        <input type="email" id="senderEmail" value="newsletter@acme.com" oninput="updateEnvelope()" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Subject Line</label>
-                        <input type="text" id="emailSubject" value="🎉 Special Offer Just for You!" oninput="updateEnvelope(); checkSpamScore();" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
-                        <div class="flex justify-between items-center mt-1 text-[10px] text-slate-400">
-                            <span id="subjectCharCount">29 chars</span>
-                            <span id="subjectStatus" class="text-emerald-500">Good length</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Preheader Text (Preview Snippet)</label>
-                        <textarea id="emailPreheader" rows="2" oninput="updateEnvelope()" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none resize-none">Don't miss our exclusive discounts inside this issue!</textarea>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Spam & Health Quick Widget -->
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Deliverability Score</span>
-                    <span id="spamScoreBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">92/100</span>
-                </div>
-                <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden mb-3">
-                    <div id="spamProgressBar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 92%;"></div>
-                </div>
-                <div id="spamQuickAlerts" class="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
-                    <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check text-[10px]"></i> Subject length optimal</div>
-                    <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-check text-[10px]"></i> Image ALT attributes present</div>
-                </div>
-                <button onclick="toggleSpamPanel()" class="w-full mt-3 text-xs text-sky-600 dark:text-sky-400 hover:underline text-left font-medium flex items-center justify-between">
-                    <span>View Detailed Analysis Report</span>
-                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                </button>
-            </div>
-
-            <!-- Email Client Live Inbox Simulation -->
-            <div class="p-4 flex-1">
-                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Inbox Preview Card</h2>
-                <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm cursor-default">
-                    <div class="flex justify-between items-start mb-1">
-                        <span id="previewSender" class="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[170px]">Acme Marketing Team</span>
-                        <span class="text-[10px] text-slate-400 shrink-0">10:52 AM</span>
-                    </div>
-                    <div id="previewSubject" class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate mb-1">🎉 Special Offer Just for You!</div>
-                    <div id="previewSnippet" class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">Don't miss our exclusive discounts inside this issue!</div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Center Work Area: Editor & Live Viewport -->
-        <div class="flex-1 flex flex-col min-w-0 bg-slate-100 dark:bg-slate-950 overflow-hidden">
-            
-            <!-- Editor Sub-Header Toolbar -->
-            <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                
-                <!-- View Mode Controls (HTML Code vs Visual vs Split) -->
-                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
-                    <button id="btnModeSplit" onclick="setEditorLayout('split')" class="px-2.5 py-1 rounded-md font-medium bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-100">Split View</button>
-                    <button id="btnModeCode" onclick="setEditorLayout('code')" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Code Only</button>
-                    <button id="btnModeVisual" onclick="setEditorLayout('visual')" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Preview Only</button>
-                </div>
-
-                <!-- Preview Viewport Switcher -->
-                <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                    <button onclick="setViewport('desktop')" id="vpDesktop" class="p-1.5 rounded-md text-xs font-medium bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm" title="Desktop View (100%)">
-                        <i class="fa-solid fa-desktop px-1"></i>
-                    </button>
-                    <button onclick="setViewport('tablet')" id="vpTablet" class="p-1.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" title="Tablet View (768px)">
-                        <i class="fa-solid fa-tablet-screen-button px-1"></i>
-                    </button>
-                    <button onclick="setViewport('mobile')" id="vpMobile" class="p-1.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" title="Mobile View (375px)">
-                        <i class="fa-solid fa-mobile-screen-button px-1"></i>
-                    </button>
-                </div>
-
-                <!-- Formatting & Code Tools -->
-                <div class="flex items-center space-x-2">
-                    <button onclick="formatHTMLCode()" class="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 transition" title="Format HTML Code">
-                        <i class="fa-solid fa-code me-1"></i> Format Code
-                    </button>
-                    <button onclick="copyHTMLCode()" class="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 transition" title="Copy Raw HTML">
-                        <i class="fa-solid fa-copy me-1"></i> Copy
-                    </button>
-                </div>
-            </div>
-
-            <!-- Workspace Editor & Preview Pane Split View -->
-            <div id="editorContainer" class="flex-1 flex overflow-hidden relative">
-                
-                <!-- Left Pane: Code Editor -->
-                <div id="codePane" class="w-1/2 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100">
-                    <div class="bg-slate-950 px-3 py-1.5 text-[11px] font-mono text-slate-400 flex justify-between items-center border-b border-slate-800">
-                        <span>HTML EDITOR</span>
-                        <span id="codeLengthBadge">0 chars</span>
-                    </div>
-                    <textarea id="htmlSourceCode" class="w-full flex-1 p-4 bg-transparent text-emerald-400 code-font text-xs leading-relaxed focus:outline-none resize-none" spellcheck="false" placeholder="Type or paste your HTML email template code here..."></textarea>
-                </div>
-
-                <!-- Right Pane: Real-time Render Viewport -->
-                <div id="previewPane" class="w-1/2 bg-slate-200 dark:bg-slate-950 flex flex-col items-center p-4 overflow-y-auto transition-all duration-300">
-                    <div id="iframeFrame" class="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 flex flex-col">
-                        <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500">
-                            <span class="flex items-center gap-1.5">
-                                <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
-                            </span>
-                            <span id="viewportDimensionsLabel" class="font-mono text-[11px]">100% Responsive</span>
-                        </div>
-                        <iframe id="emailIframe" class="w-full flex-1 bg-white border-0"></iframe>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Right Side Drawer: Detailed Spam & Deliverability Analysis (Hidden by Default) -->
-        <aside id="spamDrawer" class="hidden w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col z-10 shrink-0">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <i class="fa-solid fa-shield-halved text-sky-500"></i>
-                    Deliverability Report
-                </h2>
-                <button onclick="toggleSpamPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="p-4 flex-1 overflow-y-auto space-y-4 text-xs">
-                <!-- Score Breakdown -->
-                <div class="text-center p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div id="drawerScoreVal" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">92</div>
-                    <div class="text-slate-500 text-[11px] font-medium mt-1">Overall Health Score</div>
-                    <div class="text-[10px] text-slate-400 mt-0.5">Low risk of hitting spam filters</div>
-                </div>
-
-                <!-- Detailed Rules List -->
-                <div>
-                    <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-2">Content Diagnostics</h3>
-                    <div id="spamRulesList" class="space-y-2">
-                        <!-- Dynamic items generated by JS -->
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-2">Detected Keyword Triggers</h3>
-                    <div id="triggerWordsList" class="flex flex-wrap gap-1">
-                        <!-- Dynamic keywords -->
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-    </main>
-
-    <!-- Modal 1: Send Test Email Interface -->
-    <div id="sendModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-lg overflow-hidden flex flex-col">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-paper-plane text-sky-500"></i> Send Test Email
-                </h3>
-                <button onclick="closeSendModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="p-5 space-y-4 text-xs">
-                <div>
-                    <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Recipient Email Address(es)</label>
-                    <input type="email" id="testRecipient" value="reviewer@example.com" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" placeholder="test@example.com">
-                    <p class="text-[10px] text-slate-400 mt-1">Separate multiple email addresses with commas.</p>
-                </div>
-
-                <div>
-                    <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Sending Mode / Protocol</label>
-                    <select id="sendMethodSelect" onchange="toggleSendMethodFields()" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none">
-                        <option value="simulator">Interactive SMTP Simulator (Detailed Relay Logs)</option>
-                        <option value="webhook">Custom Webhook / API Endpoint (POST)</option>
-                    </select>
-                </div>
-
-                <div id="webhookFields" class="hidden space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                    <div>
-                        <label class="block font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook Endpoint URL</label>
-                        <input type="url" id="webhookUrl" placeholder="https://api.emailjs.com/api/v1.0/email/send" class="w-full px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none">
-                    </div>
-                </div>
-
-                <!-- Execution Terminal Logs Area -->
-                <div id="smtpLogConsole" class="hidden bg-slate-950 p-3 rounded-lg border border-slate-800 code-font text-[11px] text-emerald-400 h-32 overflow-y-auto space-y-1">
-                    <div>[SMTP] Connecting to mx.simulated-relay.org:25...</div>
-                </div>
-            </div>
-
-            <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-2">
-                <button onclick="closeSendModal()" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Cancel</button>
-                <button id="dispatchSendBtn" onclick="executeEmailDispatch()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium shadow-sm transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-paper-plane"></i> Dispatch Now
-                </button>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <!-- Modal 2: Preset Email Templates Selector -->
-    <div id="templateModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl overflow-hidden flex flex-col">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-sky-500"></i> Choose Pre-built Email Template
-                </h3>
-                <button onclick="closeTemplateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs max-h-[70vh] overflow-y-auto">
-                
-                <!-- Card 1: Promotional -->
-                <div onclick="selectPresetTemplate('promo')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
-                    <div class="w-10 h-10 rounded-lg bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
-                        <i class="fa-solid fa-tag"></i>
-                    </div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Promotional Sale</h4>
-                    <p class="text-slate-500 dark:text-slate-400">Eye-catching layout with CTA buttons, highlight banners, and discount codes.</p>
-                </div>
-
-                <!-- Card 2: Welcome -->
-                <div onclick="selectPresetTemplate('welcome')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
-                        <i class="fa-solid fa-hand-wave"></i>
-                    </div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Welcome Onboarding</h4>
-                    <p class="text-slate-500 dark:text-slate-400">Warm introduction email for new user signups with setup instructions.</p>
-                </div>
-
-                <!-- Card 3: Newsletter -->
-                <div onclick="selectPresetTemplate('newsletter')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
-                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
-                        <i class="fa-solid fa-newspaper"></i>
-                    </div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Weekly Digest</h4>
-                    <p class="text-slate-500 dark:text-slate-400">Clean content layout for blogs, article roundups, and company updates.</p>
-                </div>
-
-                <!-- Card 4: Password Reset -->
-                <div onclick="selectPresetTemplate('reset')" class="p-4 border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl cursor-pointer hover:shadow-md transition bg-slate-50/50 dark:bg-slate-900/50 group">
-                    <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
-                        <i class="fa-solid fa-key"></i>
-                    </div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">Transactional Security</h4>
-                    <p class="text-slate-500 dark:text-slate-400">Simple, urgent security email with verification button and expiry warning.</p>
-                </div>
-
-            </div>
+    <!-- Inbox & Mail Reader Two-Column View -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[520px]">
+      
+      <!-- Inbox Column (5 Cols) -->
+      <div class="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-lg transition-colors">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+          <div class="flex items-center gap-2">
+            <h2 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-sm">
+              <i data-lucide="inbox" class="w-4 h-4 text-brand-500"></i> 受信トレイ
+            </h2>
+            <span id="unreadBadge" class="bg-brand-500/10 text-brand-600 dark:text-brand-300 text-xs font-bold px-2 py-0.5 rounded-full border border-brand-500/20">
+              0件 未読
+            </span>
+          </div>
+          <button onclick="fetchInbox(true)" title="今すぐ手動更新" class="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-300 dark:border-slate-700 flex items-center gap-1.5">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> 手動更新
+          </button>
         </div>
-    </div>
 
-    <!-- Notification Toast Box -->
-    <div id="toastNotification" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 text-xs flex items-center gap-2 z-50">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
-        <span id="toastMsg">Action completed successfully.</span>
-    </div>
-
-    <!-- JavaScript Application Logic -->
-    <script>
-        // Pre-defined Email Templates HTML Code
-        const TEMPLATES = {
-            promo: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f7; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .header { background: #0284c7; padding: 30px; text-align: center; color: #ffffff; }
-        .content { padding: 30px; color: #333333; line-height: 1.6; }
-        .btn { display: inline-block; background: #0284c7; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; margin-top: 15px; }
-        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1 style="margin:0;">Exclusive 50% Off Flash Sale!</h1>
+        <!-- Message List Container -->
+        <div id="inboxList" class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[550px] relative">
+          <!-- Rendered dynamically -->
         </div>
-        <div class="content">
-            <h2>Hello Valued Customer,</h2>
-            <p>For the next 24 hours, enjoy a massive discount across our entire catalog. Upgrade your toolkit with premium features at half the price!</p>
-            <p align="center">
-                <a href="https://example.com/shop" class="btn">Claim Discount Now</a>
+      </div>
+
+      <!-- Email Reader Column (7 Cols) -->
+      <div class="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-lg transition-colors min-h-[400px]">
+        <div id="emailViewHeader" class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            <i data-lucide="mail-open" class="w-4 h-4 text-slate-400"></i> メッセージ詳細
+          </span>
+          <div id="emailViewActions" class="flex items-center gap-2 hidden">
+            <button onclick="printEmail()" class="px-2.5 py-1 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors flex items-center gap-1.5">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i> 印刷
+            </button>
+            <button onclick="toggleRawModal()" class="px-2.5 py-1 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors flex items-center gap-1.5">
+              <i data-lucide="code" class="w-3.5 h-3.5"></i> ソース
+            </button>
+            <button onclick="deleteCurrentEmail()" class="px-2.5 py-1 text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg border border-rose-500/20 transition-colors flex items-center gap-1.5">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 削除
+            </button>
+          </div>
+        </div>
+
+        <!-- Mail Viewer Content -->
+        <div id="emailViewContent" class="flex-1 p-6 overflow-y-auto max-h-[550px] bg-slate-50/30 dark:bg-slate-950/30 flex flex-col">
+          <!-- Empty State Default -->
+          <div class="my-auto text-center py-12 px-4">
+            <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700/50 shadow-inner">
+              <i data-lucide="mail-search" class="w-8 h-8"></i>
+            </div>
+            <p class="text-slate-700 dark:text-slate-300 font-medium">メールが選択されていません</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              左側の受信トレイからメッセージを選択して内容を確認できます。
             </p>
-            <p style="font-size: 12px; color: #64748b;">*Offer valid until midnight. Terms and conditions apply.</p>
+          </div>
         </div>
-        <div class="footer">
-            <p>© 2026 Acme Corp. All rights reserved.</p>
-            <p><a href="https://example.com/unsubscribe" style="color:#94a3b8;">Unsubscribe</a></p>
-        </div>
-    </div>
-</body>
-</html>`,
+      </div>
 
-            welcome: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; }
-        .card { max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px; }
-        .logo { font-size: 24px; font-weight: bold; color: #0f172a; margin-bottom: 24px; }
-        .cta-btn { display: inline-block; background-color: #10b981; color: white !important; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
-        .footer { margin-top: 30px; pt: 20px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="logo">🚀 Acme Tech</div>
-        <h1 style="color: #0f172a; font-size: 22px;">Welcome to the future of emails!</h1>
-        <p style="color: #475569; line-height: 1.6;">We are super excited to have you on board. Your new account is fully active and ready to go.</p>
-        <p style="color: #475569; line-height: 1.6;">Click below to access your dashboard and start configuring your workspace:</p>
-        <a href="https://example.com/dashboard" class="cta-btn">Go to Dashboard</a>
-        <div class="footer">
-            Need help? Reply to this email or visit our Help Center.<br>
-            Acme Inc, 123 Tech Way, Suite 400
-        </div>
     </div>
-</body>
-</html>`,
 
-            newsletter: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: Georgia, serif; background: #f1f5f9; margin:0; padding: 20px; }
-        .wrap { max-width: 620px; margin: 0 auto; background: #ffffff; padding: 35px; border-radius: 6px; }
-        .title { font-size: 28px; font-weight: normal; border-bottom: 2px solid #0284c7; padding-bottom: 10px; }
-        .article { margin-bottom: 25px; }
-        .article h3 { font-size: 18px; color: #0f172a; margin-bottom: 8px; }
-        .article p { color: #334155; line-height: 1.7; font-size: 14px; }
-    </style>
-</head>
-<body>
-    <div class="wrap">
-        <div class="title">The Weekly Tech Digest</div>
-        <p style="font-style: italic; color: #64748b; font-size: 13px;">Issue #142 • October 2026</p>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 mt-auto py-4 bg-white/60 dark:bg-slate-900/60 text-xs text-slate-500 dark:text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>© TempMail Pro. ログイン不要・受信専用使い捨てメール</p>
+      <div class="flex items-center gap-4 text-xs">
+        <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 完全匿名性</span>
+        <span class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400"><i data-lucide="zap" class="w-3.5 h-3.5"></i> リアルタイム受信</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+      <button onclick="toggleQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <h3 class="font-bold text-lg text-slate-900 dark:text-white mb-1 text-center">モバイル共有用QRコード</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 text-center mb-4">スマートフォンカメラで簡単にアドレスを取得</p>
+      <div class="bg-white p-4 rounded-xl flex justify-center shadow-inner mb-4 border border-slate-200" id="qrcodeContainer"></div>
+      <p id="qrEmailText" class="text-xs font-mono-code text-center text-brand-600 dark:text-brand-300 break-all bg-slate-100 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800"></p>
+    </div>
+  </div>
+
+  <!-- Raw View Modal -->
+  <div id="rawModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl relative">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-3">
+        <h3 class="font-semibold text-slate-900 dark:text-slate-200 text-sm">RAW Source / Header</h3>
+        <button onclick="toggleRawModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <pre id="rawContent" class="flex-1 bg-slate-950 p-4 rounded-xl text-xs font-mono-code text-emerald-400 overflow-auto border border-slate-800 whitespace-pre-wrap"></pre>
+    </div>
+  </div>
+
+  <!-- JavaScript Engine -->
+  <script>
+    // ==========================================
+    // Core App State & Config
+    // ==========================================
+    const CONFIG = {
+      POLL_INTERVAL: 5,
+      LOCAL_STORAGE_KEY: 'tempmail_pro_v2_data',
+      THEME_KEY: 'tempmail_theme',
+      MAIL_TM_BASE: 'https://api.mail.tm'
+    };
+
+    let state = {
+      address: '',
+      password: '',
+      token: '',
+      accountId: '',
+      domains: [],
+      selectedDomain: '',
+      messages: [],
+      selectedMsgId: null,
+      soundEnabled: true,
+      darkMode: true,
+      apiMode: 'mail.tm',
+      countdown: CONFIG.POLL_INTERVAL
+    };
+
+    let timerId = null;
+
+    // ==========================================
+    // Initialization & Theme Settings
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      loadState();
+      await initEmailAccount();
+      startPollingLoop();
+      lucide.createIcons();
+    });
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem(CONFIG.THEME_KEY);
+      if (savedTheme) {
+        state.darkMode = savedTheme === 'dark';
+      } else {
+        state.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      applyTheme();
+    }
+
+    function toggleTheme() {
+      state.darkMode = !state.darkMode;
+      localStorage.setItem(CONFIG.THEME_KEY, state.darkMode ? 'dark' : 'light');
+      applyTheme();
+    }
+
+    function applyTheme() {
+      const htmlEl = document.documentElement;
+      const themeIcon = document.getElementById('themeIcon');
+      if (state.darkMode) {
+        htmlEl.classList.add('dark');
+        if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
+      } else {
+        htmlEl.classList.remove('dark');
+        if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
+      }
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // Web Audio Synthesizer (Chime sound)
+    // ==========================================
+    function playNotificationSound() {
+      if (!state.soundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
         
-        <div class="article">
-            <h3>1. Understanding Modern Email Deliverability</h3>
-            <p>Email spam filters have evolved. Modern filters analyze engagement rates, domain reputation, and markup structure rather than just subject line keywords...</p>
-        </div>
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-        <div class="article">
-            <h3>2. Responsive Design Without Media Queries</h3>
-            <p>Using fluid layout techniques like flexbox and max-width rules ensures your HTML renders consistently across mobile and desktop clients...</p>
-        </div>
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
 
-        <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 40px;">
-            You received this because you are subscribed to Weekly Digest.<br>
-            <a href="https://example.com/unsubscribe" style="color: #0284c7;">Unsubscribe anytime</a>
-        </p>
-    </div>
-</body>
-</html>`,
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
 
-            reset: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; padding: 20px; }
-        .box { max-width: 480px; margin: 20px auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; text-align: center; }
-        .btn-reset { display: inline-block; background-color: #ef4444; color: white !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="box">
-        <h2 style="margin-top:0; color:#0f172a;">Password Reset Request</h2>
-        <p style="color:#475569; font-size: 14px; line-height: 1.5;">We received a request to reset your password. Click the button below to choose a new password:</p>
-        <a href="https://example.com/reset-password?token=xyz123" class="btn-reset">Reset Password</a>
-        <p style="color:#94a3b8; font-size: 12px;">If you did not request this reset, please ignore this email. This link will expire in 30 minutes.</p>
-    </div>
-</body>
-</html>`
-        };
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-        // State variables
-        let currentLayout = 'split'; // 'split', 'code', 'visual'
-        let currentViewport = 'desktop'; // 'desktop', 'tablet', 'mobile'
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } catch (e) {
+        console.warn('Audio warning:', e);
+      }
+    }
 
-        // Initialization on DOM Load
-        window.addEventListener('DOMContentLoaded', () => {
-            const codeInput = document.getElementById('htmlSourceCode');
-            
-            // Set initial default code
-            codeInput.value = TEMPLATES.promo;
-            
-            // Sync initial events
-            codeInput.addEventListener('input', () => {
-                updateIframePreview();
-                updateCodeBadge();
-                checkSpamScore();
-            });
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      const btn = document.getElementById('soundToggleBtn');
+      
+      if (state.soundEnabled) {
+        icon.setAttribute('data-lucide', 'volume-2');
+        btn.classList.remove('text-rose-500');
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+        btn.classList.add('text-rose-500');
+      }
+      lucide.createIcons();
+      saveState();
+    }
 
-            updateIframePreview();
-            updateCodeBadge();
-            updateEnvelope();
-            checkSpamScore();
+    // ==========================================
+    // State Persistence
+    // ==========================================
+    function saveState() {
+      try {
+        localStorage.setItem(CONFIG.LOCAL_STORAGE_KEY, JSON.stringify({
+          address: state.address,
+          password: state.password,
+          token: state.token,
+          accountId: state.accountId,
+          messages: state.messages,
+          soundEnabled: state.soundEnabled,
+          apiMode: state.apiMode
+        }));
+      } catch(e) {
+        console.error('Failed to save state', e);
+      }
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(CONFIG.LOCAL_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state.address = parsed.address || '';
+          state.password = parsed.password || '';
+          state.token = parsed.token || '';
+          state.accountId = parsed.accountId || '';
+          state.messages = parsed.messages || [];
+          state.soundEnabled = parsed.soundEnabled !== undefined ? parsed.soundEnabled : true;
+          state.apiMode = parsed.apiMode || 'mail.tm';
+        }
+      } catch(e) {
+        console.error('Failed to parse saved state', e);
+      }
+    }
+
+    // ==========================================
+    // Email Account Engine
+    // ==========================================
+    async function initEmailAccount() {
+      updateStatusBadge('connecting', '接続中...');
+
+      let domains = await fetchDomains();
+      if (!domains || domains.length === 0) {
+        enableMockMode('Mail.tm API接続不可のためデモ用ドメインで待機中');
+        return;
+      }
+
+      state.domains = domains;
+      populateDomainSelector(domains);
+
+      if (state.address && state.token && state.apiMode === 'mail.tm') {
+        document.getElementById('currentEmail').textContent = state.address;
+        updateStatusBadge('online', 'オンライン');
+        fetchInbox();
+        return;
+      }
+
+      await createNewAccount(domains[0]);
+    }
+
+    async function fetchDomains() {
+      try {
+        const res = await fetch(`${CONFIG.MAIL_TM_BASE}/domains`, { timeout: 5000 });
+        if (!res.ok) throw new Error('Domain fetch failed');
+        const data = await res.json();
+        return data['hydra:member'] ? data['hydra:member'].map(d => d.domain) : [];
+      } catch (err) {
+        console.warn('Mail.tm domains fetch failed:', err);
+        return null;
+      }
+    }
+
+    function populateDomainSelector(domains) {
+      const select = document.getElementById('domainSelect');
+      select.innerHTML = '';
+      domains.forEach(dom => {
+        const opt = document.createElement('option');
+        opt.value = dom;
+        opt.textContent = '@' + dom;
+        select.appendChild(opt);
+      });
+      if (state.selectedDomain) {
+        select.value = state.selectedDomain;
+      }
+    }
+
+    async function createNewAccount(domain) {
+      state.selectedDomain = domain || (state.domains[0] || 'tempmail.com');
+      const randomUser = 'user_' + Math.random().toString(36).substring(2, 10);
+      const email = `${randomUser}@${state.selectedDomain}`;
+      const password = 'Pass_' + Math.random().toString(36).substring(2, 12);
+
+      if (state.apiMode === 'mock') {
+        state.address = email;
+        state.messages = [];
+        document.getElementById('currentEmail').textContent = state.address;
+        renderInbox();
+        saveState();
+        return;
+      }
+
+      try {
+        // Register account
+        const regRes = await fetch(`${CONFIG.MAIL_TM_BASE}/accounts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: email, password: password })
         });
 
-        // Update real-time iframe output
-        function updateIframePreview() {
-            const htmlContent = document.getElementById('htmlSourceCode').value;
-            const iframe = document.getElementById('emailIframe');
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            
-            iframeDoc.open();
-            iframeDoc.write(htmlContent);
-            iframeDoc.close();
+        if (!regRes.ok) throw new Error('Account registration failed');
+        const regData = await regRes.json();
+
+        // Get authentication token
+        const tokenRes = await fetch(`${CONFIG.MAIL_TM_BASE}/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: email, password: password })
+        });
+
+        if (!tokenRes.ok) throw new Error('Token creation failed');
+        const tokenData = await tokenRes.json();
+
+        state.address = email;
+        state.password = password;
+        state.accountId = regData.id;
+        state.token = tokenData.token;
+        state.messages = [];
+        state.selectedMsgId = null;
+
+        document.getElementById('currentEmail').textContent = state.address;
+        updateStatusBadge('online', 'オンライン');
+        renderInbox();
+        renderEmailDetail(null);
+        saveState();
+
+      } catch (err) {
+        console.warn('API error, switching to Fallback Mode:', err);
+        enableMockMode('API制限のためスタンドバイモードで動作中');
+      }
+    }
+
+    function enableMockMode(msg) {
+      state.apiMode = 'mock';
+      state.domains = ['temp-mail.local', 'disposable.org', 'shield-box.jp'];
+      populateDomainSelector(state.domains);
+      
+      if (!state.address) {
+        const rand = Math.random().toString(36).substring(2, 8);
+        state.address = `user_${rand}@temp-mail.local`;
+      }
+      
+      document.getElementById('currentEmail').textContent = state.address;
+      updateStatusBadge('mock', 'スタンバイ');
+
+      renderInbox();
+      saveState();
+    }
+
+    async function changeDomain() {
+      const select = document.getElementById('domainSelect');
+      state.selectedDomain = select.value;
+      if (state.apiMode === 'mail.tm') {
+        await createNewAccount(state.selectedDomain);
+      } else {
+        const username = state.address.split('@')[0] || 'user';
+        state.address = `${username}@${state.selectedDomain}`;
+        document.getElementById('currentEmail').textContent = state.address;
+        saveState();
+      }
+    }
+
+    async function generateNewAddress() {
+      const select = document.getElementById('domainSelect');
+      const targetDom = select.value || state.domains[0] || 'temp-mail.local';
+      await createNewAccount(targetDom);
+    }
+
+    // ==========================================
+    // Fetching Messages
+    // ==========================================
+    async function fetchInbox(isManual = false) {
+      if (state.apiMode === 'mock') {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${CONFIG.MAIL_TM_BASE}/messages`, {
+          headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+
+        if (res.status === 401) {
+          await createNewAccount(state.selectedDomain);
+          return;
         }
 
-        // Update envelope metadata preview
-        function updateEnvelope() {
-            const sender = document.getElementById('senderName').value || 'Sender Name';
-            const email = document.getElementById('senderEmail').value || 'sender@domain.com';
-            const subject = document.getElementById('emailSubject').value || '(No Subject)';
-            const snippet = document.getElementById('emailPreheader').value || '';
+        if (!res.ok) throw new Error('Fetch messages failed');
 
-            document.getElementById('previewSender').textContent = `${sender} (${email})`;
-            document.getElementById('previewSubject').textContent = subject;
-            document.getElementById('previewSnippet').textContent = snippet;
+        const data = await res.json();
+        const apiMsgs = data['hydra:member'] || [];
 
-            // Subject length counter
-            const subjectLen = subject.length;
-            document.getElementById('subjectCharCount').textContent = `${subjectLen} chars`;
-            
-            const statusEl = document.getElementById('subjectStatus');
-            if (subjectLen === 0) {
-                statusEl.textContent = 'Missing subject';
-                statusEl.className = 'text-red-500';
-            } else if (subjectLen > 60) {
-                statusEl.textContent = 'Too long (may truncate)';
-                statusEl.className = 'text-amber-500';
-            } else if (subjectLen < 10) {
-                statusEl.textContent = 'Too short';
-                statusEl.className = 'text-amber-500';
-            } else {
-                statusEl.textContent = 'Good length';
-                statusEl.className = 'text-emerald-500';
-            }
-        }
+        let newArrived = false;
 
-        // Code character counter
-        function updateCodeBadge() {
-            const len = document.getElementById('htmlSourceCode').value.length;
-            document.getElementById('codeLengthBadge').textContent = `${len.toLocaleString()} chars`;
-        }
-
-        // Layout Switcher (Split vs Code vs Visual)
-        function setEditorLayout(mode) {
-            currentLayout = mode;
-            const codePane = document.getElementById('codePane');
-            const previewPane = document.getElementById('previewPane');
-
-            // Reset buttons styling
-            ['Split', 'Code', 'Visual'].forEach(m => {
-                const btn = document.getElementById(`btnMode${m}`);
-                if (m.toLowerCase() === mode) {
-                    btn.className = 'px-2.5 py-1 rounded-md font-medium bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-100';
-                } else {
-                    btn.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-                }
+        for (let item of apiMsgs) {
+          const exists = state.messages.find(m => m.id === item.id);
+          if (!exists) {
+            newArrived = true;
+            const detailRes = await fetch(`${CONFIG.MAIL_TM_BASE}/messages/${item.id}`, {
+              headers: { 'Authorization': `Bearer ${state.token}` }
             });
-
-            if (mode === 'split') {
-                codePane.classList.remove('hidden');
-                codePane.className = 'w-1/2 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100';
-                previewPane.classList.remove('hidden');
-                previewPane.className = 'w-1/2 bg-slate-200 dark:bg-slate-950 flex flex-col items-center p-4 overflow-y-auto transition-all duration-300';
-            } else if (mode === 'code') {
-                codePane.classList.remove('hidden');
-                codePane.className = 'w-full flex flex-col bg-slate-900 text-slate-100';
-                previewPane.classList.add('hidden');
-            } else if (mode === 'visual') {
-                codePane.classList.add('hidden');
-                previewPane.classList.remove('hidden');
-                previewPane.className = 'w-full bg-slate-200 dark:bg-slate-950 flex flex-col items-center p-4 overflow-y-auto transition-all duration-300';
+            let fullMsg = item;
+            if (detailRes.ok) {
+              fullMsg = await detailRes.json();
             }
-        }
 
-        // Viewport Resizer
-        function setViewport(vp) {
-            currentViewport = vp;
-            const frame = document.getElementById('iframeFrame');
-            const label = document.getElementById('viewportDimensionsLabel');
-
-            ['Desktop', 'Tablet', 'Mobile'].forEach(v => {
-                const btn = document.getElementById(`vp${v}`);
-                if (v.toLowerCase() === vp) {
-                    btn.className = 'p-1.5 rounded-md text-xs font-medium bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm';
-                } else {
-                    btn.className = 'p-1.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
-                }
+            state.messages.unshift({
+              id: fullMsg.id,
+              from: fullMsg.from.name ? `${fullMsg.from.name} <${fullMsg.from.address}>` : fullMsg.from.address,
+              to: state.address,
+              subject: fullMsg.subject || '(無題)',
+              date: new Date(fullMsg.createdAt).toLocaleString('ja-JP'),
+              html: fullMsg.html || fullMsg.text || '',
+              text: fullMsg.text || '',
+              read: false,
+              raw: JSON.stringify(fullMsg, null, 2)
             });
-
-            if (vp === 'desktop') {
-                frame.style.width = '100%';
-                frame.style.height = '100%';
-                label.textContent = '100% Responsive Desktop';
-            } else if (vp === 'tablet') {
-                frame.style.width = '768px';
-                frame.style.height = '100%';
-                label.textContent = 'Tablet Viewport (768px)';
-            } else if (vp === 'mobile') {
-                frame.style.width = '375px';
-                frame.style.height = '667px';
-                label.textContent = 'Mobile Viewport (375px)';
-            }
+          }
         }
 
-        // Deliverability & Spam Analysis Engine
-        function checkSpamScore() {
-            const subject = document.getElementById('emailSubject').value.toLowerCase();
-            const html = document.getElementById('htmlSourceCode').value.toLowerCase();
-            
-            let score = 100;
-            const rules = [];
-            const triggersFound = [];
-
-            // Trigger words list
-            const spamKeywords = ['100% free', '50% off', 'buy now', 'cheap', 'click here', 'discount', 'extra income', 'guarantee', 'make money', 'no obligation', 'offer', 'urgent', 'winner', 'free'];
-
-            spamKeywords.forEach(kw => {
-                if (subject.includes(kw) || html.includes(kw)) {
-                    triggersFound.push(kw);
-                }
-            });
-
-            if (triggersFound.length > 0) {
-                const penalty = Math.min(triggersFound.length * 5, 25);
-                score -= penalty;
-                rules.push({
-                    pass: false,
-                    msg: `Contains promotional trigger words (${triggersFound.length} detected)`
-                });
-            } else {
-                rules.push({ pass: true, msg: 'No suspicious spam trigger keywords detected' });
-            }
-
-            // Subject Length Check
-            if (subject.length === 0) {
-                score -= 30;
-                rules.push({ pass: false, msg: 'Subject line is completely empty' });
-            } else if (subject.length > 70) {
-                score -= 10;
-                rules.push({ pass: false, msg: 'Subject line exceeds 70 characters' });
-            } else {
-                rules.push({ pass: true, msg: 'Subject line length is optimal' });
-            }
-
-            // Image ALT check
-            if (html.includes('<img')) {
-                if (html.includes('alt=')) {
-                    rules.push({ pass: true, msg: 'Image elements include ALT descriptions' });
-                } else {
-                    score -= 15;
-                    rules.push({ pass: false, msg: 'Images missing ALT attributes' });
-                }
-            }
-
-            // Unsubscribe link check
-            if (html.includes('unsubscribe')) {
-                rules.push({ pass: true, msg: 'Unsubscribe compliance option found' });
-            } else {
-                score -= 20;
-                rules.push({ pass: false, msg: 'Missing visible Unsubscribe option' });
-            }
-
-            // Update UI Score Indicators
-            score = Math.max(0, score);
-            const scoreBadge = document.getElementById('spamScoreBadge');
-            const scoreBar = document.getElementById('spamProgressBar');
-            
-            scoreBadge.textContent = `${score}/100`;
-            scoreBar.style.width = `${score}%`;
-
-            if (score >= 80) {
-                scoreBadge.className = 'px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300';
-                scoreBar.className = 'bg-emerald-500 h-full transition-all duration-300';
-            } else if (score >= 60) {
-                scoreBadge.className = 'px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300';
-                scoreBar.className = 'bg-amber-500 h-full transition-all duration-300';
-            } else {
-                scoreBadge.className = 'px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300';
-                scoreBar.className = 'bg-red-500 h-full transition-all duration-300';
-            }
-
-            // Populate Quick Alerts widget
-            const quickAlerts = document.getElementById('spamQuickAlerts');
-            quickAlerts.innerHTML = rules.slice(0, 2).map(r => `
-                <div class="flex items-center gap-1.5 ${r.pass ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}">
-                    <i class="fa-solid ${r.pass ? 'fa-check' : 'fa-triangle-exclamation'} text-[10px]"></i>
-                    <span class="truncate">${r.msg}</span>
-                </div>
-            `).join('');
-
-            // Populate Drawer Details
-            document.getElementById('drawerScoreVal').textContent = score;
-            const rulesList = document.getElementById('spamRulesList');
-            rulesList.innerHTML = rules.map(r => `
-                <div class="p-2 rounded-lg border ${r.pass ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300' : 'border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300'} flex items-start gap-2">
-                    <i class="fa-solid ${r.pass ? 'fa-circle-check text-emerald-500' : 'fa-triangle-exclamation text-amber-500'} mt-0.5"></i>
-                    <span>${r.msg}</span>
-                </div>
-            `).join('');
-
-            const kwList = document.getElementById('triggerWordsList');
-            if (triggersFound.length === 0) {
-                kwList.innerHTML = `<span class="text-slate-400 italic">None found</span>`;
-            } else {
-                kwList.innerHTML = triggersFound.map(t => `<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 rounded text-[10px] font-mono">${t}</span>`).join('');
-            }
+        if (newArrived) {
+          playNotificationSound();
+          saveState();
+          renderInbox();
         }
 
-        // Toggle Right Spam Drawer
-        function toggleSpamPanel() {
-            const drawer = document.getElementById('spamDrawer');
-            drawer.classList.toggle('hidden');
+      } catch (err) {
+        console.warn('Fetch error:', err);
+      }
+    }
+
+    // ==========================================
+    // UI Rendering
+    // ==========================================
+    function renderInbox() {
+      const container = document.getElementById('inboxList');
+      const unreadBadge = document.getElementById('unreadBadge');
+
+      const unreadCount = state.messages.filter(m => !m.read).length;
+      unreadBadge.textContent = `${unreadCount}件 未読`;
+
+      if (state.messages.length === 0) {
+        container.innerHTML = `
+          <div class="p-12 text-center my-auto flex flex-col items-center justify-center min-h-[350px]">
+            <div class="relative flex items-center justify-center mb-6">
+              <div class="absolute w-20 h-20 bg-brand-500/20 rounded-full radar-pulse"></div>
+              <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-brand-500 rounded-full flex items-center justify-center relative z-10 border border-slate-300 dark:border-slate-700 shadow-sm">
+                <i data-lucide="radio" class="w-6 h-6"></i>
+              </div>
+            </div>
+            <p class="text-slate-700 dark:text-slate-300 font-medium">メールの到着を待っています...</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+              受信トレイは ${CONFIG.POLL_INTERVAL} 秒ごとに自動で新しいメッセージを確認します。
+            </p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = state.messages.map(msg => {
+        const isSelected = msg.id === state.selectedMsgId;
+        const activeClass = isSelected 
+          ? 'bg-brand-50 dark:bg-brand-600/15 border-l-4 border-l-brand-500' 
+          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 border-l-4 border-l-transparent';
+        const unreadClass = !msg.read ? 'font-bold text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400';
+
+        return `
+          <div onclick="selectEmail('${msg.id}')" class="p-4 cursor-pointer transition-colors ${activeClass}">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs ${unreadClass} truncate max-w-[200px] flex items-center gap-1.5">
+                ${!msg.read ? '<span class="w-2 h-2 rounded-full bg-brand-500 inline-block shrink-0"></span>' : ''}
+                ${escapeHtml(msg.from)}
+              </span>
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">${msg.date.split(' ')[1] || msg.date}</span>
+            </div>
+            <h4 class="text-sm font-semibold ${msg.read ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'} truncate">${escapeHtml(msg.subject)}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">${escapeHtml(msg.text || '').substring(0, 60)}...</p>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function selectEmail(msgId) {
+      const msg = state.messages.find(m => m.id === msgId);
+      if (!msg) return;
+
+      msg.read = true;
+      state.selectedMsgId = msgId;
+      saveState();
+      renderInbox();
+      renderEmailDetail(msg);
+    }
+
+    function renderEmailDetail(msg) {
+      const contentPane = document.getElementById('emailViewContent');
+      const actionsPane = document.getElementById('emailViewActions');
+
+      if (!msg) {
+        actionsPane.classList.add('hidden');
+        contentPane.innerHTML = `
+          <div class="my-auto text-center py-12 px-4">
+            <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700/50 shadow-inner">
+              <i data-lucide="mail-search" class="w-8 h-8"></i>
+            </div>
+            <p class="text-slate-700 dark:text-slate-300 font-medium">メールが選択されていません</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              左側の受信トレイからメッセージを選択して内容を確認できます。
+            </p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      actionsPane.classList.remove('hidden');
+
+      contentPane.innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white break-words">${escapeHtml(msg.subject)}</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+              <div><strong class="text-slate-700 dark:text-slate-300">差出人:</strong> ${escapeHtml(msg.from)}</div>
+              <div><strong class="text-slate-700 dark:text-slate-300">宛先:</strong> ${escapeHtml(msg.to)}</div>
+              <div class="col-span-full"><strong class="text-slate-700 dark:text-slate-300">日時:</strong> ${msg.date}</div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-950 p-5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm overflow-x-auto min-h-[250px] leading-relaxed shadow-inner" id="emailBodyFrame">
+            ${cleanAndRenderHtml(msg.html || msg.text)}
+          </div>
+        </div>
+      `;
+
+      lucide.createIcons();
+    }
+
+    function deleteCurrentEmail() {
+      if (!state.selectedMsgId) return;
+      state.messages = state.messages.filter(m => m.id !== state.selectedMsgId);
+      state.selectedMsgId = null;
+      saveState();
+      renderInbox();
+      renderEmailDetail(null);
+    }
+
+    function cleanAndRenderHtml(htmlOrText) {
+      if (!htmlOrText) return '<p class="text-slate-400 italic">本文はありません</p>';
+      
+      const hasHtml = /<[a-z][\s\S]*>/i.test(htmlOrText);
+      if (!hasHtml) {
+        return `<pre class="whitespace-pre-wrap font-sans">${escapeHtml(htmlOrText)}</pre>`;
+      }
+
+      let safeHtml = htmlOrText
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/on\w+="[^"]*"/g, '')
+        .replace(/javascript:/gi, '');
+
+      return safeHtml;
+    }
+
+    // ==========================================
+    // Polling Loop
+    // ==========================================
+    function startPollingLoop() {
+      if (timerId) clearInterval(timerId);
+
+      timerId = setInterval(() => {
+        state.countdown--;
+        if (state.countdown <= 0) {
+          state.countdown = CONFIG.POLL_INTERVAL;
+          fetchInbox();
         }
+        document.getElementById('refreshTimer').textContent = state.countdown;
+      }, 1000);
+    }
 
-        function runDeliverabilityCheck() {
-            checkSpamScore();
-            const drawer = document.getElementById('spamDrawer');
-            drawer.classList.remove('hidden');
-        }
+    // ==========================================
+    // Status Badge Helpers
+    // ==========================================
+    function updateStatusBadge(status, text) {
+      const badge = document.getElementById('statusBadge');
+      const textEl = document.getElementById('statusText');
+      textEl.textContent = text;
 
-        // Modals Management
-        function openSendModal() {
-            document.getElementById('sendModal').classList.remove('hidden');
-        }
+      if (status === 'online') {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+      } else if (status === 'mock') {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+      } else {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20';
+      }
+    }
 
-        function closeSendModal() {
-            document.getElementById('sendModal').classList.add('hidden');
-            document.getElementById('smtpLogConsole').classList.add('hidden');
-        }
+    // ==========================================
+    // Utilities
+    // ==========================================
+    function copyAddress() {
+      const email = state.address;
+      if (!email) return;
 
-        function loadTemplateModal() {
-            document.getElementById('templateModal').classList.remove('hidden');
-        }
+      const tempInput = document.createElement('input');
+      tempInput.value = email;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
 
-        function closeTemplateModal() {
-            document.getElementById('templateModal').classList.add('hidden');
-        }
+      const badge = document.getElementById('copySuccessBadge');
+      badge.classList.remove('hidden');
+      setTimeout(() => badge.classList.add('hidden'), 2000);
+    }
 
-        function selectPresetTemplate(key) {
-            if (TEMPLATES[key]) {
-                document.getElementById('htmlSourceCode').value = TEMPLATES[key];
-                updateIframePreview();
-                updateCodeBadge();
-                checkSpamScore();
-                closeTemplateModal();
-                showToast("Template loaded successfully!");
-            }
-        }
+    function toggleQrModal() {
+      const modal = document.getElementById('qrModal');
+      const isHidden = modal.classList.contains('hidden');
 
-        function toggleSendMethodFields() {
-            const val = document.getElementById('sendMethodSelect').value;
-            const webhookDiv = document.getElementById('webhookFields');
-            if (val === 'webhook') {
-                webhookDiv.classList.remove('hidden');
-            } else {
-                webhookDiv.classList.add('hidden');
-            }
-        }
+      if (isHidden) {
+        modal.classList.remove('hidden');
+        document.getElementById('qrEmailText').textContent = state.address;
 
-        // Simulate interactive Email Delivery / SMTP Relay
-        function executeEmailDispatch() {
-            const method = document.getElementById('sendMethodSelect').value;
-            const recipient = document.getElementById('testRecipient').value;
+        const container = document.getElementById('qrcodeContainer');
+        container.innerHTML = '';
+        new QRCode(container, {
+          text: state.address,
+          width: 180,
+          height: 180,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
 
-            if (!recipient) {
-                showToast("Please enter a valid recipient email.", true);
-                return;
-            }
+    function toggleRawModal() {
+      const modal = document.getElementById('rawModal');
+      const isHidden = modal.classList.contains('hidden');
 
-            const btn = document.getElementById('dispatchSendBtn');
-            const logBox = document.getElementById('smtpLogConsole');
-            logBox.classList.remove('hidden');
-            logBox.innerHTML = '';
+      if (isHidden) {
+        const msg = state.messages.find(m => m.id === state.selectedMsgId);
+        if (!msg) return;
+        document.getElementById('rawContent').textContent = msg.raw || JSON.stringify(msg, null, 2);
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
 
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
+    function printEmail() {
+      const msg = state.messages.find(m => m.id === state.selectedMsgId);
+      if (!msg) return;
 
-            const logs = [
-                `[SMTP] Connecting to mail relay service...`,
-                `[SMTP] AUTH PLAIN LOGIN SSL/TLS (Port 587)...`,
-                `[SMTP] 250 OK: Handshake accepted`,
-                `[MAIL FROM] <${document.getElementById('senderEmail').value}>`,
-                `[RCPT TO] <${recipient}>`,
-                `[DATA] Transmitting HTML payload (${document.getElementById('htmlSourceCode').value.length} bytes)...`,
-                `[250 2.0.0] Message queued successfully! ID: msg_${Math.random().toString(36).substring(7)}`
-            ];
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html>
+          <head>
+            <title>印刷 - ${escapeHtml(msg.subject)}</title>
+            <style>
+              body { font-family: sans-serif; padding: 20px; color: #111; }
+              .header { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+              .title { font-size: 20px; font-weight: bold; }
+              .meta { font-size: 12px; color: #555; margin-top: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="title">${escapeHtml(msg.subject)}</div>
+              <div class="meta"><strong>From:</strong> ${escapeHtml(msg.from)}</div>
+              <div class="meta"><strong>To:</strong> ${escapeHtml(msg.to)}</div>
+              <div class="meta"><strong>Date:</strong> ${msg.date}</div>
+            </div>
+            <div>${msg.html || msg.text}</div>
+          </body>
+        </html>
+      `);
+      printWin.document.close();
+      printWin.focus();
+      printWin.print();
+    }
 
-            let idx = 0;
-            const interval = setInterval(() => {
-                if (idx < logs.length) {
-                    const logLine = document.createElement('div');
-                    logLine.textContent = logs[idx];
-                    logBox.appendChild(logLine);
-                    logBox.scrollTop = logBox.scrollHeight;
-                    idx++;
-                } else {
-                    clearInterval(interval);
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50');
-                    showToast(`Test email dispatched to ${recipient}!`);
-                }
-            }, 400);
-        }
-
-        // Utilities: Copy HTML & Code Formatting
-        function copyHTMLCode() {
-            const code = document.getElementById('htmlSourceCode').value;
-            const tempTextarea = document.createElement('textarea');
-            tempTextarea.value = code;
-            document.body.appendChild(tempTextarea);
-            tempTextarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempTextarea);
-            showToast("HTML Code copied to clipboard!");
-        }
-
-        function formatHTMLCode() {
-            const textarea = document.getElementById('htmlSourceCode');
-            let text = textarea.value;
-            
-            // Simple auto-indentation/formatting algorithm for quick cleanup
-            let formatted = '';
-            let pad = 0;
-            text.split(/>\s*</).forEach(node => {
-                let indent = 0;
-                if (node.match( /^\/\w/ )) {
-                    pad -= 1;
-                } else if (node.match( /^[\w+=]/ ) && !node.match( /\/>$/ )) {
-                    indent = 1;
-                }
-                let padding = '';
-                for (let i = 0; i < pad; i++) {
-                    padding += '  ';
-                }
-                formatted += padding + '<' + node + '>\n';
-                pad += indent;
-            });
-            
-            textarea.value = formatted.trim();
-            updateCodeBadge();
-            showToast("Code reformatted!");
-        }
-
-        // Dark Mode Toggle
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                html.classList.add('light');
-            } else {
-                html.classList.remove('light');
-                html.classList.add('dark');
-            }
-        }
-
-        // Toast Popup Helper
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toastNotification');
-            const toastMsg = document.getElementById('toastMsg');
-            const toastIcon = document.getElementById('toastIcon');
-
-            toastMsg.textContent = msg;
-            if (isError) {
-                toastIcon.className = "fa-solid fa-circle-exclamation text-red-400 text-base";
-            } else {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-    </script>
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+  </script>
 </body>
 </html>
